@@ -27,13 +27,13 @@ expect exactly one injection and one module and a tiny fixture without
 bundle. That is a limitation of those fixtures, not a staging failure; the
 plan/apply/check run above replaced them for this mod.
 
-No game was launched and no Minecraft resources or player data were read or
-changed. Compilation does not establish that the panel looks or behaves as
-intended in game; that remains a manual check with the compatible prepared
-resources. The HUD drawing uses only the public `HudBatch`/`HudAtlas` data and
-the crate-private `ui_theme::Ui` widgets; icon bitmaps are uploaded into the
-unused bottom strip of the `horizon/ui-text` atlas region the first time the
-atlas pointer changes.
+The package was installed into the `native-mods` instance, rebuilt with
+`native-build` (485 s, `native-ba6344a-2517c193e775`) and launched into
+`New World`. The game window opening does not establish that the panel looks or
+behaves as intended; that remains a manual check. The HUD drawing uses only the
+public `HudBatch`/`HudAtlas` data and the crate-private `ui_theme::Ui` widgets;
+icon bitmaps are uploaded into the unused bottom strip of the `horizon/ui-text`
+atlas region the first time the atlas pointer changes.
 
 CI reproduces formatting, clippy and the standalone runtime tests. The full
 native checks additionally need a Horizon Git history containing the pin and its
