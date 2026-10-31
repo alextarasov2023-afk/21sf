@@ -516,6 +516,7 @@ impl Paint<'_, '_> {
 
     fn icon(&mut self, name: &str, cx: f32, cy: f32, size: f32, color: u32) {
         let (ox, oy, s) = (self.ox, self.oy, self.s);
+        let k = self.ui.density / self.ui.batch.scale;
         let atlas = self.ui.atlas;
         upload_icons(atlas, self.ui.batch);
         let rect = ICON_MAP.with(|cell| {
@@ -528,10 +529,10 @@ impl Paint<'_, '_> {
         });
         if let Some(rect) = rect {
             self.ui.batch.rect_uv(
-                ox + (cx - size / 2.0) * s,
-                oy + (cy - size / 2.0) * s,
-                size * s,
-                size * s,
+                (ox + (cx - size / 2.0) * s) * k,
+                (oy + (cy - size / 2.0) * s) * k,
+                size * s * k,
+                size * s * k,
                 rect,
                 color,
             );
@@ -666,7 +667,7 @@ impl Paint<'_, '_> {
             theme.faint,
             "FEATURES",
         );
-        const FEATURE_ICONS: [&str; 5] = ["sword", "running", "camera", "person", "cog"];
+        const FEATURE_ICONS: [&str; 5] = ["sword", "running", "camera", "person", "dots"];
         for (index, name) in view.categories.iter().enumerate() {
             let row = category_row(view.side, index);
             let active = view.category == index;
@@ -962,7 +963,7 @@ impl Paint<'_, '_> {
         let (kx, ky) = keyboard_hit(side, column, row).center();
         self.keyboard(kx, ky, 1.0, theme.muted);
         let (dx, dy) = dots_hit(side, column, row).center();
-        self.icon("dots", dx, dy, 14.0, theme.muted);
+        self.icon("cog", dx, dy, 14.0, theme.muted);
         self.toggle(
             toggle_row(side, column, row),
             enabled,
