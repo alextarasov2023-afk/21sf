@@ -2,21 +2,32 @@
 
 ## Experimental Yaya click GUI
 
-The native bundle includes an experimental in-game panel. While in a world,
-press **Right Shift** to open it and **Escape** or **Right Shift** to close it.
-Click a category or a module row to change its visual preview. All switches are
-placeholders: features such as Fly, ESP and KillAura are not implemented.
-Click the `...` on a module row to open its preview settings. Click the bind
-field and press a key; Escape cancels, Backspace/Delete clears it. A bound key
-toggles the placeholder while playing, without consuming the game's own key
-action. Right Shift and Escape are reserved. The preview value and binds live
-in memory only and reset when the game exits; they do not change gameplay.
+The native bundle includes an experimental in-game panel styled after the
+supplied dark launcher mockup. Text uses Horizon's bundled Geist Regular/Medium
+faces, and every icon (crossed swords, four-way arrows, eye, person, connected
+nodes, gear, bag, accounts, keyboard, search, sort chevrons, menu) is drawn from
+vector shapes instead of sprites.
 
-The mixin planner and `cargo check` were run against the pinned Horizon source;
-interactive rendering, input and launcher installation have not yet been
-verified. The old `src/overlay.rs` scaffold is not part of this native bundle.
-The template's tiny fixture currently lacks the HUD and input targets and its
-`tools/test_template.py` check therefore fails for this expanded bundle.
+The panel has a sidebar with FEATURES (Combat, Movement, Visuals, Player, Misc),
+MANAGER (Presets, Auto Buy, Accounts), an account row and a search field; the
+content area has two module columns with animated pill switches and a MODULE
+SETTINGS card for the selected row.
+
+While in a world, press **Right Shift** to open it and **Escape** or **Right
+Shift** to close it. Click a category to change the listed modules; click a row
+to toggle its switch. Click the `...` on a row to open its preview settings;
+click the bind field (or the keyboard icon) and press a key. Escape cancels a
+pending bind, Backspace/Delete clears it. A bound key toggles the placeholder
+while playing, without consuming the game's own key action. Right Shift and
+Escape are reserved. The preview value and binds live in memory only and reset
+when the game exits; they do not change gameplay. Presets, Auto Buy and
+Accounts are visual rows only.
+
+The panel is drawn by `prism_ui.rs`, a public support module injected into
+`horizon_client`'s library crate: Horizon's design-system widgets are
+crate-private there, while `game.rs` is compiled into the binary crate. The
+game-side helpers only snapshot state and hit-test the shared rectangles. The
+old `src/overlay.rs` scaffold is not part of this native bundle.
 
 A minimal **horizon-mixins** mod template based on
 [Horizon Veinminer](https://github.com/levzzz5154/horizon-veinminer).
@@ -67,9 +78,12 @@ a separate clone/worktree and set `HORIZON_MIXINS=/path/to/pinned/horizon-mixins
 Cargo.toml                         Standalone runtime library + source audit workspace
 compatibility.json                 Exact upstream/tool revisions and source hashes
 mixins/example_mod/
-  horizon-mixin.toml                Module and HEAD declaration
+  horizon-mixin.toml                Modules, hooks and compatibility pin
   break.rs                         Small typed hook adapter
-  runtime.rs                       Runtime implementation and unit tests (single source)
+  runtime.rs                       Panel state, binds and unit tests (standalone library)
+  gui_render.rs                    Snapshots state and calls the panel renderer
+  gui_input.rs                     Right Shift, keyboard and mouse handling
+  prism_ui.rs                      Launcher-style drawing, Geist text and vector icons
 tools/horizon.py                   Export → plan → apply → check/build/test
 tools/test_template.py             Tiny compiled fixture; no Horizon checkout/assets needed
 tools/test_stage.py                Real pinned source audit and repeatability test

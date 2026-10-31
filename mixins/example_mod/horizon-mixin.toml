@@ -12,6 +12,15 @@ file = "crates/horizon-client/src/game.rs"
 name = "example_mod"
 source = "runtime.rs"
 
+# The panel's drawing lives in the library crate: `ui_theme`'s widgets are
+# crate-private there, and the game module is compiled into the binary crate.
+[[module]]
+id = "ui"
+file = "crates/horizon-client/src/lib.rs"
+name = "prism_ui"
+source = "prism_ui.rs"
+visibility = "pub"
+
 [[injection]]
 id = "before-break"
 kind = "HEAD"

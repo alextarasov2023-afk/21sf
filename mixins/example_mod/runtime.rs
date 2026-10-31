@@ -41,6 +41,8 @@ pub const MODULES: [[&str; 6]; 5] = [
     ],
 ];
 
+pub const MANAGER: [&str; 3] = ["Presets", "Auto Buy", "Accounts"];
+
 pub struct GuiState {
     pub category: usize,
     pub enabled: [[bool; 6]; 5],
@@ -74,15 +76,6 @@ impl GuiState {
         }
         count
     }
-}
-
-pub fn layout(width: f32, height: f32) -> (f32, f32, f32) {
-    let scale = (width / 600.0).min(height / 360.0).clamp(0.1, 1.0);
-    (
-        (width - 600.0 * scale) / 2.0,
-        (height - 360.0 * scale) / 2.0,
-        scale,
-    )
 }
 
 static OPEN: AtomicBool = AtomicBool::new(false);
@@ -120,12 +113,6 @@ mod tests {
             block_break_message([-3, 64, 12]),
             "[example_mod] Breaking block at -3, 64, 12"
         );
-    }
-
-    #[test]
-    fn layout_centers_and_scales_down() {
-        assert_eq!(layout(800.0, 600.0), (100.0, 120.0, 1.0));
-        assert_eq!(layout(300.0, 180.0), (0.0, 0.0, 0.5));
     }
 
     #[test]
