@@ -1,19 +1,24 @@
-// yaya Horizon native mod — overlay GUI каркас.
+// yaya Horizon native mod — overlay GUI.
 
 mod overlay;
 
 use overlay::Overlay;
+use std::thread;
 
 static mut OVERLAY: Option<Overlay> = None;
+static mut OVERLAY_THREAD: Option<thread::JoinHandle<()>> = None;
 
 #[no_mangle]
 pub extern "C" fn mod_init() {
-    unsafe { OVERLAY = Some(Overlay::new()); }
-}
-
-#[no_mangle]
-pub extern "C" fn mod_tick() {
-    // overlay работает в отдельном потоке
+    unsafe {
+        let mut overlay = Overlay::new();
+        overlay.open = true;
+        let handle = thread::spawn(move || {
+            overlay.run();
+        });
+        OVERLAY = Some(overlay);
+        OVERLAY_THREAD = Some(handle);
+    }
 }
 
 #[no_mangle]
