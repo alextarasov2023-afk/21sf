@@ -20,24 +20,24 @@ use crate::ui_theme::{Face, Ui};
 pub const DESIGN_W: f32 = 1280.0;
 pub const DESIGN_H: f32 = 640.0;
 
-pub const PANEL_W: f32 = 900.0;
-pub const PANEL_H: f32 = 440.0;
+pub const PANEL_W: f32 = 940.0;
+pub const PANEL_H: f32 = 400.0;
 pub const PANEL_Y: f32 = (DESIGN_H - PANEL_H) / 2.0;
-pub const SIDE_W: f32 = 288.0;
+pub const SIDE_W: f32 = 292.0;
 pub const SIDE_GAP: f32 = 16.0;
-pub const SIDEBAR_W: f32 = 184.0;
+pub const SIDEBAR_W: f32 = 188.0;
 
-pub const CONTENT_X: f32 = 204.0;
-pub const CONTENT_W: f32 = 672.0;
-pub const COLUMNS: usize = 3;
-pub const ROWS: usize = 2;
-pub const COLUMN_W: f32 = 216.0;
-pub const COLUMN_STEP: f32 = 228.0;
-pub const ROW_H: f32 = 140.0;
-pub const ROW_STEP: f32 = 152.0;
-pub const ROW_TOP: f32 = 114.0;
-pub const CARD_Y: f32 = 102.0;
-pub const CARD_H: f32 = 316.0;
+pub const CONTENT_X: f32 = 208.0;
+pub const CONTENT_W: f32 = 708.0;
+pub const COLUMNS: usize = 2;
+pub const ROWS: usize = 3;
+pub const COLUMN_W: f32 = 348.0;
+pub const COLUMN_STEP: f32 = 360.0;
+pub const ROW_H: f32 = 78.0;
+pub const ROW_STEP: f32 = 86.0;
+pub const ROW_TOP: f32 = 116.0;
+pub const CARD_Y: f32 = 104.0;
+pub const CARD_H: f32 = 274.0;
 
 /// Mirrors `example_mod::SIDE_*` in the game module: 0 closed, then module
 /// settings, binds and configs.
@@ -101,7 +101,7 @@ pub fn search_rect(side: usize) -> Rect {
     let main = main_rect(side);
     Rect {
         x: main.x + CONTENT_X,
-        y: main.y + 22.0,
+        y: main.y + 24.0,
         w: CONTENT_W,
         h: 40.0,
     }
@@ -110,7 +110,7 @@ pub fn search_rect(side: usize) -> Rect {
 pub fn search_clear(side: usize) -> Rect {
     let search = search_rect(side);
     Rect {
-        x: search.x + search.w - 32.0,
+        x: search.x + search.w - 34.0,
         y: search.y + 6.0,
         w: 28.0,
         h: 28.0,
@@ -143,7 +143,7 @@ pub fn module_row(side: usize, column: usize, row: usize) -> Rect {
 pub fn toggle_row(side: usize, column: usize, row: usize) -> Rect {
     let module = module_row(side, column, row);
     Rect {
-        x: module.x + COLUMN_W - 56.0,
+        x: module.x + COLUMN_W - 58.0,
         y: module.y + (ROW_H - 24.0) / 2.0,
         w: 44.0,
         h: 24.0,
@@ -154,9 +154,9 @@ pub fn category_row(side: usize, index: usize) -> Rect {
     let main = main_rect(side);
     Rect {
         x: main.x + 12.0,
-        y: main.y + 80.0 + index as f32 * 36.0,
+        y: main.y + 80.0 + index as f32 * 34.0,
         w: SIDEBAR_W - 24.0,
-        h: 32.0,
+        h: 30.0,
     }
 }
 
@@ -164,9 +164,9 @@ pub fn manager_row(side: usize, index: usize) -> Rect {
     let main = main_rect(side);
     Rect {
         x: main.x + 12.0,
-        y: main.y + 294.0 + index as f32 * 36.0,
+        y: main.y + 278.0 + index as f32 * 34.0,
         w: SIDEBAR_W - 24.0,
-        h: 32.0,
+        h: 30.0,
     }
 }
 
@@ -184,7 +184,7 @@ pub fn settings_toggle(side: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
         x: frame.x + frame.w - 18.0 - 50.0,
-        y: frame.y + 101.0,
+        y: frame.y + 102.0,
         w: 50.0,
         h: 26.0,
     }
@@ -193,19 +193,19 @@ pub fn settings_toggle(side: usize) -> Rect {
 pub fn settings_bind(side: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
-        x: frame.x + 18.0,
-        y: frame.y + 210.0,
-        w: frame.w - 36.0,
-        h: 48.0,
+        x: frame.x + 20.0,
+        y: frame.y + 196.0,
+        w: frame.w - 40.0,
+        h: 46.0,
     }
 }
 
 pub fn settings_slider_track(side: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
-        x: frame.x + 18.0,
-        y: frame.y + 312.0,
-        w: frame.w - 36.0,
+        x: frame.x + 20.0,
+        y: frame.y + 306.0,
+        w: frame.w - 40.0,
         h: 8.0,
     }
 }
@@ -213,9 +213,9 @@ pub fn settings_slider_track(side: usize) -> Rect {
 pub fn settings_slider_hit(side: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
-        x: frame.x + 12.0,
-        y: frame.y + 294.0,
-        w: frame.w - 24.0,
+        x: frame.x + 14.0,
+        y: frame.y + 290.0,
+        w: frame.w - 28.0,
         h: 44.0,
     }
 }
@@ -223,40 +223,40 @@ pub fn settings_slider_hit(side: usize) -> Rect {
 pub fn settings_done(side: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
-        x: frame.x + 18.0,
-        y: frame.y + frame.h - 62.0,
-        w: frame.w - 36.0,
-        h: 44.0,
+        x: frame.x + 20.0,
+        y: frame.y + frame.h - 56.0,
+        w: frame.w - 40.0,
+        h: 40.0,
     }
 }
 
 pub fn binds_row(side: usize, index: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
-        x: frame.x + 18.0,
-        y: frame.y + 100.0 + index as f32 * 44.0,
-        w: frame.w - 36.0,
-        h: 38.0,
+        x: frame.x + 20.0,
+        y: frame.y + 96.0 + index as f32 * 40.0,
+        w: frame.w - 40.0,
+        h: 34.0,
     }
 }
 
 pub fn binds_clear(side: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
-        x: frame.x + 18.0,
-        y: frame.y + frame.h - 62.0,
-        w: frame.w - 36.0,
-        h: 44.0,
+        x: frame.x + 20.0,
+        y: frame.y + frame.h - 56.0,
+        w: frame.w - 40.0,
+        h: 40.0,
     }
 }
 
 pub fn config_row(side: usize, index: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
-        x: frame.x + 18.0,
-        y: frame.y + 100.0 + index as f32 * 38.0,
-        w: frame.w - 36.0,
-        h: 34.0,
+        x: frame.x + 20.0,
+        y: frame.y + 96.0 + index as f32 * 34.0,
+        w: frame.w - 40.0,
+        h: 30.0,
     }
 }
 
@@ -266,10 +266,10 @@ pub fn config_button(side: usize, which: usize) -> Rect {
     let column = (which % 2) as f32;
     let row = (which / 2) as f32;
     Rect {
-        x: frame.x + 18.0 + column * 126.0,
-        y: frame.y + 320.0 + row * 46.0,
-        w: 108.0,
-        h: 42.0,
+        x: frame.x + 20.0 + column * 132.0,
+        y: frame.y + 288.0 + row * 46.0,
+        w: 120.0,
+        h: 40.0,
     }
 }
 
@@ -773,7 +773,7 @@ impl Paint<'_, '_> {
             Face::Medium,
             8.0,
             main.x + 30.0,
-            main.y + 280.0,
+            main.y + 264.0,
             1.8,
             theme.faint,
             "MANAGER",
@@ -809,22 +809,24 @@ impl Paint<'_, '_> {
             );
         }
         self.fill(
-            main.x + 16.0,
-            main.y + 382.0,
-            SIDEBAR_W - 32.0,
+            main.x + 12.0,
+            main.y + 350.0,
+            SIDEBAR_W - 24.0,
             1.0,
             theme.divider,
         );
-        let (fx, fy) = (main.x + 50.0, main.y + 412.0);
-        if !self.face(view.player_skin, fx, fy, 36.0) {
-            self.rounded(fx - 18.0, fy - 18.0, 36.0, 36.0, 8.0, theme.raised);
-            self.icon("person", fx, fy, 24.0, theme.muted);
+        // A rounded avatar: the square skin face sits 3 units inside a rounded
+        // plate, so its corners stay behind the plate's corners.
+        let (fx, fy) = (main.x + 29.0, main.y + 377.0);
+        self.rounded(fx - 17.0, fy - 17.0, 34.0, 34.0, 9.0, theme.raised);
+        if !self.face(view.player_skin, fx, fy, 28.0) {
+            self.icon("person", fx, fy, 20.0, theme.muted);
         }
-        self.border(fx - 18.0, fy - 18.0, 36.0, 36.0, 8.0, theme.border);
+        self.border(fx - 17.0, fy - 17.0, 34.0, 34.0, 9.0, theme.border);
         self.text_mid(
             Face::Medium,
             13.0,
-            main.x + 76.0,
+            main.x + 50.0,
             fy,
             theme.strong,
             view.player_name,
@@ -973,7 +975,7 @@ impl Paint<'_, '_> {
             category_icon(category),
             rect.x + 22.0,
             cy,
-            24.0,
+            20.0,
             if enabled { theme.accent } else { theme.icon },
         );
         let bind = view.binds[category][module].as_deref();
@@ -992,7 +994,7 @@ impl Paint<'_, '_> {
             self.text_mid(
                 Face::Regular,
                 14.0,
-                rect.x + 44.0,
+                rect.x + 42.0,
                 cy,
                 name_color,
                 view.modules[category][module],
@@ -1001,16 +1003,16 @@ impl Paint<'_, '_> {
             self.text(
                 Face::Regular,
                 13.5,
-                rect.x + 44.0,
-                cy - 13.0,
+                rect.x + 42.0,
+                cy - 12.0,
                 name_color,
                 view.modules[category][module],
             );
             self.text_spaced(
                 Face::Medium,
                 7.5,
-                rect.x + 44.0,
-                cy + 1.5,
+                rect.x + 42.0,
+                cy + 2.5,
                 1.0,
                 if bind.is_some() {
                     theme.accent
@@ -1027,7 +1029,7 @@ impl Paint<'_, '_> {
         if row + 1 < ROWS && view.visible.get((row + 1) * COLUMNS + column).is_some() {
             self.fill(
                 rect.x + 16.0,
-                rect.y + rect.h + 5.0,
+                rect.y + rect.h + 3.5,
                 rect.w - 32.0,
                 1.0,
                 theme.divider,
@@ -1135,7 +1137,7 @@ impl Paint<'_, '_> {
                 Face::Medium,
                 9.0,
                 frame.x + frame.w / 2.0,
-                frame.y + 190.0,
+                frame.y + 194.0,
                 theme.muted,
                 "SELECT A MODULE IN THE LIST",
             );
@@ -1156,7 +1158,7 @@ impl Paint<'_, '_> {
             Face::Medium,
             8.5,
             frame.x + 20.0,
-            frame.y + 196.0,
+            frame.y + 182.0,
             1.6,
             theme.faint,
             "KEY BIND",
@@ -1184,7 +1186,7 @@ impl Paint<'_, '_> {
         );
         let cy = bind_box.y + bind_box.h / 2.0;
         self.keyboard(
-            bind_box.x + 24.0,
+            bind_box.x + 26.0,
             cy,
             1.15,
             if view.waiting_bind {
@@ -1197,7 +1199,7 @@ impl Paint<'_, '_> {
             self.text_mid(
                 Face::Medium,
                 12.5,
-                bind_box.x + 48.0,
+                bind_box.x + 50.0,
                 cy,
                 theme.accent,
                 "PRESS A KEY",
@@ -1208,7 +1210,7 @@ impl Paint<'_, '_> {
             self.text_mid(
                 Face::Medium,
                 12.5,
-                bind_box.x + 48.0,
+                bind_box.x + 50.0,
                 cy,
                 if bind.is_some() {
                     theme.strong
@@ -1223,7 +1225,7 @@ impl Paint<'_, '_> {
             Face::Medium,
             8.5,
             frame.x + 20.0,
-            frame.y + 286.0,
+            frame.y + 282.0,
             1.6,
             theme.faint,
             "VALUE",
@@ -1233,7 +1235,7 @@ impl Paint<'_, '_> {
             Face::Medium,
             10.5,
             frame.x + frame.w - 20.0,
-            frame.y + 284.0,
+            frame.y + 280.0,
             theme.accent,
             &percent,
         );
@@ -1283,7 +1285,7 @@ impl Paint<'_, '_> {
                 Face::Medium,
                 9.0,
                 frame.x + frame.w / 2.0,
-                frame.y + 176.0,
+                frame.y + 186.0,
                 theme.muted,
                 "NO BINDS YET",
             );
@@ -1291,7 +1293,7 @@ impl Paint<'_, '_> {
                 Face::Regular,
                 7.5,
                 frame.x + frame.w / 2.0,
-                frame.y + 196.0,
+                frame.y + 206.0,
                 theme.faint,
                 "OPEN A MODULE AND PRESS A KEY",
             );
@@ -1365,7 +1367,7 @@ impl Paint<'_, '_> {
                 Face::Medium,
                 9.0,
                 frame.x + frame.w / 2.0,
-                frame.y + 140.0,
+                frame.y + 166.0,
                 theme.muted,
                 "NO CONFIGS YET",
             );
@@ -1373,7 +1375,7 @@ impl Paint<'_, '_> {
                 Face::Regular,
                 7.5,
                 frame.x + frame.w / 2.0,
-                frame.y + 160.0,
+                frame.y + 186.0,
                 theme.faint,
                 "PRESS NEW TO SAVE THE CURRENT SETUP",
             );
@@ -1604,27 +1606,27 @@ mod tests {
 
     #[test]
     fn rows_and_hitboxes_agree() {
-        let row = module_row(SIDE_NONE, 2, 1);
+        let row = module_row(SIDE_NONE, 1, 2);
         assert!(row.contains(row.center().0, row.center().1));
-        let hit = toggle_row(SIDE_NONE, 2, 1);
+        let hit = toggle_row(SIDE_NONE, 1, 2);
         let (x, y) = hit.center();
         assert!(row.contains(x, y), "{hit:?} is outside {row:?}");
-        let card = card_rect(SIDE_NONE, 2);
+        let card = card_rect(SIDE_NONE, 1);
         assert!(card.contains(row.center().0, row.center().1));
         assert!(row.y + row.h <= card.y + card.h);
         assert!(row.x + row.w <= card.x + card.w);
     }
 
     #[test]
-    fn the_grid_is_three_columns_by_two_rows() {
+    fn the_grid_is_two_columns_by_three_rows() {
         let first = module_row(SIDE_NONE, 0, 0);
-        let third = module_row(SIDE_NONE, 2, 0);
+        let second = module_row(SIDE_NONE, 1, 0);
         let fourth = module_row(SIDE_NONE, 0, 1);
-        assert!(close(third.y, first.y));
-        assert!(close(third.x - first.x, 2.0 * COLUMN_STEP));
+        assert!(close(second.y, first.y));
+        assert!(close(second.x - first.x, COLUMN_STEP));
         assert!(close(fourth.x, first.x) && fourth.y > first.y);
-        let sixth = module_row(SIDE_NONE, 2, 1);
-        let card = card_rect(SIDE_NONE, 2);
+        let sixth = module_row(SIDE_NONE, 1, 2);
+        let card = card_rect(SIDE_NONE, 1);
         assert!(close(sixth.x, card.x));
         assert!(sixth.y + sixth.h <= card.y + CARD_H);
     }

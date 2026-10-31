@@ -16,8 +16,9 @@ stays source-only.
 The panel is centred on a 1280×640 design surface: a sidebar with the PRISM
 logo and wordmark, FEATURES (Combat, Movement, Visuals, Player, Misc), MANAGER
 (Binds, Config) and the local player's skin face with their name, plus a
-content area with a search field and three columns of two module cards. Rows
-and windows are sized to their text so the panel stays compact. When a
+content area with a search field and two columns of three compact module
+cards. Rows and windows are sized to their text so the panel stays compact.
+When a
 settings, binds or config window opens, the panel slides left so the panel and
 window are centred together. The panel fades and lifts in when opened, side
 windows slide in, and switches/slider animate between states.
