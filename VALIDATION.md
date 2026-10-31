@@ -29,8 +29,10 @@ expect exactly one injection and one module and a tiny fixture without
 bundle. That is a limitation of those fixtures, not a staging failure; the
 plan/apply/check run above replaced them for this mod.
 
-The package was installed into the `native-mods` instance, rebuilt with
-`native-build` and launched into `New World`. The game window opening does not
+The package was installed into the `native-mods` instance (installed file MD5
+`A71E12BD…30E7`, matching the package), rebuilt with `native-build` (finished
+2026-11-01 00:09) and launched into `New World`; the player joined at 00:11:53.
+The game window opening does not
 establish that the panel looks or behaves as intended; that remains a manual
 check. This revision draws a 950x520 panel with a logo-only sidebar, three
 manager entries styled like the categories, a 3x2 grid of short module chips
