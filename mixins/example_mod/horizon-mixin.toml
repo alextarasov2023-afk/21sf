@@ -18,3 +18,25 @@ kind = "HEAD"
 target = "horizon_client::game::Game<'_>::break_block"
 helper = "break.rs"
 bindings = [{ name = "pos", ty = "[i32;3]", value = "pos" }]
+
+[[injection]]
+id = "gui-render"
+kind = "RETURN"
+target = "horizon_client::game::Game<'_>::hud"
+helper = "gui_render.rs"
+bindings = [
+  { name = "batch", ty = "HudBatch", value = "$value" },
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+]
+
+[[injection]]
+id = "gui-input"
+kind = "HEAD"
+cancellable = true
+target = "horizon_client::game::<Game<'_> as ApplicationHandler>::window_event"
+helper = "gui_input.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "event", ty = "&WindowEvent", value = "&event" },
+  { name = "id", ty = "WindowId", value = "id" },
+]

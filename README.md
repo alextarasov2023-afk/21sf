@@ -1,5 +1,19 @@
 # Horizon native mod template
 
+## Experimental Yaya click GUI
+
+The native bundle includes an experimental in-game panel. While in a world,
+press **Right Shift** to open it; click **Smooth camera** to change Horizon's
+cinematic camera, or press **Escape**, **Right Shift**, or the close button to
+close it. The panel is not a collection of gameplay modules: features such as
+Fly, ESP and KillAura are not implemented.
+
+The mixin planner and `cargo check` were run against the pinned Horizon source;
+interactive rendering, input and launcher installation have not yet been
+verified. The old `src/overlay.rs` scaffold is not part of this native bundle.
+The template's tiny fixture currently lacks the HUD and input targets and its
+`tools/test_template.py` check therefore fails for this expanded bundle.
+
 A minimal **horizon-mixins** mod template based on
 [Horizon Veinminer](https://github.com/levzzz5154/horizon-veinminer).
 It declares one HEAD hook that logs a block-break attempt, then lets Horizon's
