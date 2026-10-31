@@ -43,13 +43,15 @@ pub const MODULES: [[&str; 6]; 5] = [
     ],
 ];
 
-pub const MANAGER: [&str; 2] = ["Binds", "Config"];
+pub const MANAGER: [&str; 3] = ["Binds", "Config", "Themes"];
+pub const MODES: [&str; 4] = ["Normal", "Smooth", "Instant", "Legacy"];
+pub const THEMES: [&str; 5] = ["Azure", "Violet", "Emerald", "Amber", "Rose"];
 
 /// Which window sits to the right of the panel; mirrors `prism_ui::SIDE_*`.
 pub const SIDE_NONE: usize = 0;
-pub const SIDE_MODULE: usize = 1;
-pub const SIDE_BINDS: usize = 2;
-pub const SIDE_CONFIG: usize = 3;
+pub const SIDE_BINDS: usize = 1;
+pub const SIDE_CONFIG: usize = 2;
+pub const SIDE_THEMES: usize = 3;
 
 /// Where the config system keeps its files, relative to the game directory.
 pub const CONFIG_DIR: &str = "config/prism";
@@ -60,8 +62,11 @@ pub struct GuiState {
     pub animation: [[f32; 6]; 5],
     pub binds: [[Option<String>; 6]; 5],
     pub values: [[u8; 6]; 5],
+    pub modes: [[u8; 6]; 5],
+    pub theme: u8,
     pub selected: Option<(usize, usize)>,
     pub waiting_bind: bool,
+    pub mode_open: bool,
     pub side: usize,
     pub query: String,
     pub search_focus: bool,
@@ -85,8 +90,11 @@ impl Default for GuiState {
             animation: [[0.0; 6]; 5],
             binds: [const { [const { None }; 6] }; 5],
             values: [[50; 6]; 5],
+            modes: [[0; 6]; 5],
+            theme: 0,
             selected: None,
             waiting_bind: false,
+            mode_open: false,
             side: SIDE_NONE,
             query: String::new(),
             search_focus: false,
@@ -107,8 +115,11 @@ pub static GUI: Mutex<GuiState> = Mutex::new(GuiState {
     animation: [[0.0; 6]; 5],
     binds: [const { [const { None }; 6] }; 5],
     values: [[50; 6]; 5],
+    modes: [[0; 6]; 5],
+    theme: 0,
     selected: None,
     waiting_bind: false,
+    mode_open: false,
     side: SIDE_NONE,
     query: String::new(),
     search_focus: false,
@@ -167,33 +178,39 @@ impl GuiState {
     }
 
     pub fn open_module(&mut self, category: usize, module: usize) {
-        if self.side == SIDE_NONE {
-            self.side_anim = 0.0;
-        }
-        self.side = SIDE_MODULE;
         self.selected = Some((category, module));
         self.waiting_bind = false;
+        self.mode_open = false;
         self.dragging = false;
+    }
+
+    /// Keeps the settings drop-down populated instead of showing a placeholder.
+    pub fn select_default(&mut self) {
+        if self.selected.is_none() {
+            self.selected = Some((self.category, 0));
+        }
     }
 
     pub fn close_side(&mut self) {
         self.side = SIDE_NONE;
-        self.selected = None;
         self.waiting_bind = false;
+        self.mode_open = false;
         self.dragging = false;
         self.side_anim = 0.0;
     }
 
     pub fn reset_ui(&mut self) {
         self.close_side();
+        self.selected = None;
         self.search_focus = false;
         self.query.clear();
         self.open = 0.0;
     }
 
     pub fn serialize(&self) -> String {
-        let mut out = String::from("# prism config v1\n");
+        let mut out = String::from("# prism config v2\n");
         out.push_str(&format!("category={}\n", self.category));
+        out.push_str(&format!("theme={}\n", self.theme));
         for category in 0..5 {
             for module in 0..6 {
                 if self.enabled[category][module] {
@@ -216,6 +233,16 @@ impl GuiState {
                 ));
             }
         }
+        for category in 0..5 {
+            for module in 0..6 {
+                if self.modes[category][module] != 0 {
+                    out.push_str(&format!(
+                        "mode={category},{module},{}\n",
+                        self.modes[category][module]
+                    ));
+                }
+            }
+        }
         out
     }
 
@@ -223,6 +250,7 @@ impl GuiState {
         self.enabled = [[false; 6]; 5];
         self.binds = [const { [const { None }; 6] }; 5];
         self.values = [[50; 6]; 5];
+        self.modes = [[0; 6]; 5];
         for line in text.lines() {
             let line = line.trim();
             if line.is_empty() || line.starts_with('#') {
@@ -235,6 +263,16 @@ impl GuiState {
                 "category" => {
                     if let Some(category) = rest.trim().parse::<usize>().ok().filter(|c| *c < 5) {
                         self.category = category;
+                    }
+                }
+                "theme" => {
+                    if let Some(theme) = rest
+                        .trim()
+                        .parse::<usize>()
+                        .ok()
+                        .filter(|t| *t < THEMES.len())
+                    {
+                        self.theme = theme as u8;
                     }
                 }
                 "enabled" => {
@@ -278,6 +316,27 @@ impl GuiState {
                         && let Ok(value) = value.trim().parse::<u8>()
                     {
                         self.values[category][module] = value.min(100);
+                    }
+                }
+                "mode" => {
+                    let mut parts = rest.splitn(3, ',');
+                    let (Some(category), Some(module), Some(mode)) =
+                        (parts.next(), parts.next(), parts.next())
+                    else {
+                        continue;
+                    };
+                    let (Ok(category), Ok(module)) = (
+                        category.trim().parse::<usize>(),
+                        module.trim().parse::<usize>(),
+                    ) else {
+                        continue;
+                    };
+                    if category < 5
+                        && module < 6
+                        && let Ok(mode) = mode.trim().parse::<usize>()
+                        && mode < MODES.len()
+                    {
+                        self.modes[category][module] = mode as u8;
                     }
                 }
                 _ => {}
@@ -549,6 +608,8 @@ mod tests {
         state.binds[2][3] = Some("KeyK".into());
         state.values[0][1] = 75;
         state.values[4][5] = 100;
+        state.modes[2][3] = 2;
+        state.theme = 3;
 
         let mut restored = GuiState::default();
         restored.apply(&state.serialize());
@@ -561,19 +622,25 @@ mod tests {
         assert_eq!(restored.values[0][1], 75);
         assert_eq!(restored.values[4][5], 100);
         assert_eq!(restored.values[3][2], 50);
+        assert_eq!(restored.modes[2][3], 2);
+        assert_eq!(restored.modes[0][0], 0);
+        assert_eq!(restored.theme, 3);
     }
 
     #[test]
     fn config_parser_ignores_bad_lines_and_clamps() {
         let mut state = GuiState::default();
         state.apply(
-            "garbage\ncategory=9\nenabled=5,0\nenabled=0,6\nvalue=0,0,240\nbind=0,0,\nvalue=1,1,10\n",
+            "garbage\ncategory=9\ntheme=9\nenabled=5,0\nenabled=0,6\nvalue=0,0,240\nbind=0,0,\nvalue=1,1,10\nmode=0,0,9\nmode=1,1,2\n",
         );
         assert_eq!(state.category, 0);
+        assert_eq!(state.theme, 0);
         assert!(!state.enabled[0][0]);
         assert_eq!(state.values[0][0], 100);
         assert_eq!(state.values[1][1], 10);
         assert_eq!(state.binds[0][0], None);
+        assert_eq!(state.modes[0][0], 0);
+        assert_eq!(state.modes[1][1], 2);
     }
 
     #[test]

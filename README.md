@@ -13,22 +13,24 @@ sword, Movement the runner and so on, and Config uses the open-folder asset.
 They are decoded once and uploaded into the HUD glyph atlas, so the package
 stays source-only.
 
-The panel is centred on a 1280×640 design surface: a sidebar with the PRISM
-logo and wordmark, FEATURES (Combat, Movement, Visuals, Player, Misc), MANAGER
-(Binds, Config) and the local player's skin face with their name, plus a
-content area with a search field and two columns of three compact module
-cards. Rows and windows are sized to their text so the panel stays compact.
-When a
-settings, binds or config window opens, the panel slides left so the panel and
-window are centred together. The panel fades and lifts in when opened, side
-windows slide in, and switches/slider animate between states.
+The panel is centred on a 1280×640 design surface as a 950×520 window: a
+sidebar with only the supplied logo (no wordmark), the five module categories
+and three manager entries (Binds, Config, Themes) styled as one continuous
+list, plus the local player's skin face and name at the bottom. The content
+area holds the search field, a 3×2 grid of short module chips, and the selected
+module's drop-down settings directly underneath, so the panel has no dead
+space. When a
+manager window opens, the panel slides left so the panel and window are centred
+together. The panel fades and lifts in when opened, side windows slide in, and
+switches/slider animate between states.
 
 While in a world, press **Right Shift** to open the panel and **Escape** or
 **Right Shift** to close it. Click a category to change the listed modules;
-click a module's switch to toggle it; click anywhere else on a module row to
-open its settings in the right-hand window (ENABLED switch, KEY BIND field,
-VALUE slider, DONE). The VALUE slider follows the cursor while the mouse button
-is held, so it can be dragged smoothly. Clicking the key box starts a key
+click a module's switch to toggle it; click anywhere else on a chip to open its
+drop-down settings inline (ENABLED switch, MODE select, KEY BIND field, VALUE
+slider). MODE opens a four-entry list (Normal, Smooth, Instant, Legacy) that
+closes on a click outside. The VALUE slider follows the cursor while the mouse
+button is held, so it can be dragged smoothly. Clicking the key box starts a key
 capture; Escape cancels it, Backspace/Delete clears the bind. A bound key
 toggles the placeholder while playing, without consuming the game's own key
 action. Right Shift and Escape are reserved.
@@ -36,16 +38,19 @@ action. Right Shift and Escape are reserved.
 The search field filters every category live by module name (case-insensitive)
 and shows RESULTS instead of a category title; click the field or press a
 character to type, Escape unfocuses or clears it, and the X clears it. MANAGER
-holds Binds and Config: Binds lists the assigned keys in grid order and jumps to
-the module you click, with CLEAR ALL BINDS; Config lists the saved presets and
-offers NEW, SAVE, LOAD and DELETE with a status line.
+holds Binds, Config and Themes in the same row style as the categories: Binds
+lists the assigned keys in grid order and jumps to the module you click, with
+CLEAR ALL BINDS; Config lists the saved presets and offers NEW, SAVE, LOAD and
+DELETE with a status line; Themes previews five accent palettes (Azure, Violet,
+Emerald, Amber, Rose) and recolours the whole panel when one is picked.
 
 Settings persist as dependency-free text files under `config/prism/`
-(`# prism config v1`, `category=N`, `enabled=c,m`, `bind=c,m,key`,
-`value=c,m,v`). `session.cfg` is written when the panel closes and restored on
-open; named configs are only touched by the Config buttons. Module switches,
-values and binds have no gameplay effect — binds only consume their own key
-press. The panel is drawn by `prism_ui.rs`, a public support module injected
+(`# prism config v2`, `category=N`, `theme=N`, `enabled=c,m`, `bind=c,m,key`,
+`value=c,m,v`, `mode=c,m,index`). `session.cfg` is written when the panel
+closes and restored on open; named configs are only touched by the Config
+buttons. Module switches, values, modes and binds have no gameplay effect —
+binds only consume their own key press, and the theme only changes the panel's
+accent. The panel is drawn by `prism_ui.rs`, a public support module injected
 into `horizon_client`'s library crate: Horizon's design-system widgets are
 crate-private there, while `game.rs` is compiled into the binary crate. The
 game-side helpers only snapshot state and hit-test the shared rectangles. The
@@ -105,7 +110,7 @@ mixins/example_mod/
   runtime.rs                       Panel state, binds and unit tests (standalone library)
   gui_render.rs                    Snapshots state and calls the panel renderer
   gui_input.rs                     Right Shift, keyboard, search and mouse handling
-  prism_ui.rs                      Centred layout, Geist text, right-side settings window
+  prism_ui.rs                      Centred layout, Geist text, 3x2 chips, inline settings
   icons.rs                         Generated base64 logo/icon payloads and decoder
 tools/gen_icons.mjs                Regenerates icons.rs from tools/icons/ sources
 tools/icons/                       Supplied logo and icon assets (P-logo, SVG, PNG)
