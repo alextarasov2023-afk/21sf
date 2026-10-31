@@ -29,12 +29,14 @@ bundle. That is a limitation of those fixtures, not a staging failure; the
 plan/apply/check run above replaced them for this mod.
 
 The package was installed into the `native-mods` instance, rebuilt with
-`native-build` (485 s, `native-ba6344a-2517c193e775`) and launched into
+`native-build` (498 s, `native-ba6344a-3ca3428e524d`) and launched into
 `New World`. The game window opening does not establish that the panel looks or
 behaves as intended; that remains a manual check. The HUD drawing uses only the
 public `HudBatch`/`HudAtlas` data and the crate-private `ui_theme::Ui` widgets;
 icon bitmaps are uploaded into the unused bottom strip of the `horizon/ui-text`
-atlas region the first time the atlas pointer changes.
+atlas region the first time the atlas pointer changes. The sidebar face reads
+the game's own 64x64 skin sprite for the local player (`entity/player/wide/steve`
+here) and draws its face and hat layers.
 
 CI reproduces formatting, clippy and the standalone runtime tests. The full
 native checks additionally need a Horizon Git history containing the pin and its
