@@ -21,6 +21,7 @@ const ICONS = [
   { name: 'camera', file: 'iconfinder-picture-image-photo-camera-photography-4593188_122257.svg', size: 64, color: '#fff', rule: 'evenodd' },
   { name: 'person', file: '3289576-individual-man-people-person_107097.svg', size: 64, color: '#fff' },
   { name: 'cog', file: 'cog.svg', size: 64, color: '#fff' },
+  { name: 'folder', file: 'folder-open.svg', size: 64, color: '#fff' },
   { name: 'dots', file: 'three-dots-more-indicator_icon-icons.com_72518.png', size: 64, color: '#fff' },
   { name: 'search', file: 'instrument_lupa_on5ekftxwvjk_64.png', size: 64, color: '#fff' },
 ];

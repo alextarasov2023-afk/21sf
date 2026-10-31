@@ -20,20 +20,20 @@ use crate::ui_theme::{Face, Ui};
 pub const DESIGN_W: f32 = 1280.0;
 pub const DESIGN_H: f32 = 640.0;
 
-pub const PANEL_W: f32 = 880.0;
-pub const PANEL_H: f32 = 430.0;
+pub const PANEL_W: f32 = 804.0;
+pub const PANEL_H: f32 = 392.0;
 pub const PANEL_Y: f32 = (DESIGN_H - PANEL_H) / 2.0;
-pub const SIDE_W: f32 = 300.0;
-pub const SIDE_GAP: f32 = 16.0;
-pub const SIDEBAR_W: f32 = 190.0;
+pub const SIDE_W: f32 = 272.0;
+pub const SIDE_GAP: f32 = 14.0;
+pub const SIDEBAR_W: f32 = 176.0;
 
-pub const CONTENT_X: f32 = 218.0;
-pub const CONTENT_W: f32 = 648.0;
-pub const COLUMN_W: f32 = 316.0;
-pub const COLUMN_STEP: f32 = 332.0;
-pub const ROW_H: f32 = 64.0;
-pub const ROW_STEP: f32 = 72.0;
-pub const ROW_TOP: f32 = 104.0;
+pub const CONTENT_X: f32 = 196.0;
+pub const CONTENT_W: f32 = 592.0;
+pub const COLUMN_W: f32 = 290.0;
+pub const COLUMN_STEP: f32 = 302.0;
+pub const ROW_H: f32 = 56.0;
+pub const ROW_STEP: f32 = 62.0;
+pub const ROW_TOP: f32 = 96.0;
 
 /// Mirrors `example_mod::SIDE_*` in the game module: 0 closed, then module
 /// settings, binds and configs.
@@ -41,6 +41,14 @@ pub const SIDE_NONE: usize = 0;
 pub const SIDE_MODULE: usize = 1;
 pub const SIDE_BINDS: usize = 2;
 pub const SIDE_CONFIG: usize = 3;
+
+/// The bundled icon for a category, reused by its rows and its modules.
+pub fn category_icon(category: usize) -> &'static str {
+    ["sword", "running", "camera", "person", "dots"]
+        .get(category)
+        .copied()
+        .unwrap_or("dots")
+}
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Rect {
@@ -89,17 +97,17 @@ pub fn search_rect(side: usize) -> Rect {
     let main = main_rect(side);
     Rect {
         x: main.x + CONTENT_X,
-        y: main.y + 26.0,
+        y: main.y + 22.0,
         w: CONTENT_W,
-        h: 36.0,
+        h: 34.0,
     }
 }
 
 pub fn search_clear(side: usize) -> Rect {
     let search = search_rect(side);
     Rect {
-        x: search.x + search.w - 32.0,
-        y: search.y + 6.0,
+        x: search.x + search.w - 30.0,
+        y: search.y + 5.0,
         w: 24.0,
         h: 24.0,
     }
@@ -113,9 +121,9 @@ pub fn card_rect(side: usize, column: usize) -> Rect {
     let main = main_rect(side);
     Rect {
         x: main.x + CONTENT_X + column as f32 * COLUMN_STEP,
-        y: main.y + 96.0,
+        y: main.y + 88.0,
         w: COLUMN_W,
-        h: 232.0,
+        h: 196.0,
     }
 }
 
@@ -131,9 +139,9 @@ pub fn module_row(side: usize, column: usize, row: usize) -> Rect {
 pub fn toggle_row(side: usize, column: usize, row: usize) -> Rect {
     let module = module_row(side, column, row);
     Rect {
-        x: module.x + COLUMN_W - 58.0,
-        y: module.y + 20.0,
-        w: 46.0,
+        x: module.x + COLUMN_W - 56.0,
+        y: module.y + (ROW_H - 24.0) / 2.0,
+        w: 44.0,
         h: 24.0,
     }
 }
@@ -141,9 +149,9 @@ pub fn toggle_row(side: usize, column: usize, row: usize) -> Rect {
 pub fn dots_hit(side: usize, column: usize, row: usize) -> Rect {
     let module = module_row(side, column, row);
     Rect {
-        x: module.x + COLUMN_W - 96.0,
-        y: module.y + 18.0,
-        w: 32.0,
+        x: module.x + COLUMN_W - 138.0,
+        y: module.y + (ROW_H - 28.0) / 2.0,
+        w: 28.0,
         h: 28.0,
     }
 }
@@ -151,8 +159,8 @@ pub fn dots_hit(side: usize, column: usize, row: usize) -> Rect {
 pub fn keyboard_hit(side: usize, column: usize, row: usize) -> Rect {
     let module = module_row(side, column, row);
     Rect {
-        x: module.x + COLUMN_W - 132.0,
-        y: module.y + 18.0,
+        x: module.x + COLUMN_W - 100.0,
+        y: module.y + (ROW_H - 28.0) / 2.0,
         w: 28.0,
         h: 28.0,
     }
@@ -162,9 +170,9 @@ pub fn category_row(side: usize, index: usize) -> Rect {
     let main = main_rect(side);
     Rect {
         x: main.x + 12.0,
-        y: main.y + 80.0 + index as f32 * 36.0,
+        y: main.y + 74.0 + index as f32 * 34.0,
         w: SIDEBAR_W - 24.0,
-        h: 32.0,
+        h: 30.0,
     }
 }
 
@@ -172,17 +180,17 @@ pub fn manager_row(side: usize, index: usize) -> Rect {
     let main = main_rect(side);
     Rect {
         x: main.x + 12.0,
-        y: main.y + 286.0 + index as f32 * 36.0,
+        y: main.y + 260.0 + index as f32 * 34.0,
         w: SIDEBAR_W - 24.0,
-        h: 32.0,
+        h: 30.0,
     }
 }
 
 pub fn side_close(side: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
-        x: frame.x + frame.w - 38.0,
-        y: frame.y + 16.0,
+        x: frame.x + frame.w - 36.0,
+        y: frame.y + 14.0,
         w: 22.0,
         h: 22.0,
     }
@@ -192,7 +200,7 @@ pub fn settings_toggle(side: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
         x: frame.x + frame.w - 18.0 - 46.0,
-        y: frame.y + 90.0,
+        y: frame.y + 82.0,
         w: 46.0,
         h: 24.0,
     }
@@ -202,9 +210,9 @@ pub fn settings_bind(side: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
         x: frame.x + 18.0,
-        y: frame.y + 150.0,
+        y: frame.y + 136.0,
         w: frame.w - 36.0,
-        h: 42.0,
+        h: 40.0,
     }
 }
 
@@ -212,7 +220,7 @@ pub fn settings_slider_track(side: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
         x: frame.x + 18.0,
-        y: frame.y + 252.0,
+        y: frame.y + 232.0,
         w: frame.w - 36.0,
         h: 6.0,
     }
@@ -222,7 +230,7 @@ pub fn settings_slider_hit(side: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
         x: frame.x + 12.0,
-        y: frame.y + 236.0,
+        y: frame.y + 216.0,
         w: frame.w - 24.0,
         h: 38.0,
     }
@@ -232,9 +240,9 @@ pub fn settings_done(side: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
         x: frame.x + 18.0,
-        y: frame.y + frame.h - 58.0,
+        y: frame.y + frame.h - 54.0,
         w: frame.w - 36.0,
-        h: 40.0,
+        h: 38.0,
     }
 }
 
@@ -242,9 +250,9 @@ pub fn binds_row(side: usize, index: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
         x: frame.x + 18.0,
-        y: frame.y + 88.0 + index as f32 * 44.0,
+        y: frame.y + 82.0 + index as f32 * 40.0,
         w: frame.w - 36.0,
-        h: 38.0,
+        h: 34.0,
     }
 }
 
@@ -252,9 +260,9 @@ pub fn binds_clear(side: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
         x: frame.x + 18.0,
-        y: frame.y + frame.h - 58.0,
+        y: frame.y + frame.h - 54.0,
         w: frame.w - 36.0,
-        h: 40.0,
+        h: 38.0,
     }
 }
 
@@ -262,9 +270,9 @@ pub fn config_row(side: usize, index: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
         x: frame.x + 18.0,
-        y: frame.y + 104.0 + index as f32 * 36.0,
+        y: frame.y + 94.0 + index as f32 * 31.0,
         w: frame.w - 36.0,
-        h: 30.0,
+        h: 27.0,
     }
 }
 
@@ -274,10 +282,10 @@ pub fn config_button(side: usize, which: usize) -> Rect {
     let column = (which % 2) as f32;
     let row = (which / 2) as f32;
     Rect {
-        x: frame.x + 18.0 + column * 137.0,
-        y: frame.y + 326.0 + row * 44.0,
-        w: 127.0,
-        h: 38.0,
+        x: frame.x + 18.0 + column * 118.0,
+        y: frame.y + 266.0 + row * 42.0,
+        w: 112.0,
+        h: 36.0,
     }
 }
 
@@ -342,12 +350,22 @@ pub struct View<'a> {
     pub configs: &'a [String],
     pub config_selected: Option<usize>,
     pub status: &'a str,
+    /// Panel open fade/slide, 0..1; stepped by [`render`].
+    pub open: &'a mut f32,
+    /// Right-hand window slide-in, 0..1; stepped by [`render`].
+    pub side_anim: &'a mut f32,
+    /// True while the VALUE slider is held, so the cursor drives it.
+    pub dragging: bool,
 }
 
 pub fn render(atlas: &HudAtlas, batch: &mut HudBatch, cursor: (f32, f32), view: &mut View<'_>) {
     let (ox, oy, s) = layout(batch.width, batch.height, batch.scale);
     let mut ui = Ui::new(atlas, batch, cursor);
     let cursor = ((ui.cursor.0 - ox) / s, (ui.cursor.1 - oy) / s);
+    *view.open += (1.0 - *view.open) * 0.24;
+    let open = view.open.clamp(0.0, 1.0);
+    let side_target = if view.side == SIDE_NONE { 0.0 } else { 1.0 };
+    *view.side_anim += (side_target - *view.side_anim) * 0.28;
     for category in 0..5 {
         for module in 0..6 {
             let target = f32::from(view.enabled[category][module]);
@@ -355,21 +373,51 @@ pub fn render(atlas: &HudAtlas, batch: &mut HudBatch, cursor: (f32, f32), view: 
             *anim += (target - *anim) * 0.22;
         }
     }
+    if view.dragging
+        && view.side == SIDE_MODULE
+        && let Some((category, module)) = view.selected
+    {
+        let track = settings_slider_track(view.side);
+        let value = ((cursor.0 - track.x) / track.w * 100.0)
+            .round()
+            .clamp(0.0, 100.0);
+        view.values[category][module] = value as u8;
+    }
     // Dim the game behind the click GUI; the design box is centred in dp, so
     // the scrim covers the whole surface rather than only the panel.
-    ui.rounded(0.0, 0.0, ui.w, ui.h, 0.0, rgba(4, 5, 8, 128));
+    ui.rounded(
+        0.0,
+        0.0,
+        ui.w,
+        ui.h,
+        0.0,
+        rgba(4, 5, 8, (128.0 * open) as u8),
+    );
     {
         let mut paint = Paint {
             ui: &mut ui,
+            // The panel settles a little upward while it fades in.
             ox,
-            oy,
+            oy: oy + (1.0 - open) * 18.0,
             s,
             cursor,
+            side_anim: view.side_anim.clamp(0.0, 1.0),
             theme: Theme::new(),
         };
         paint.draw_main(view);
     }
     ui.finish();
+}
+
+/// Linearly blends two packed colours (`rgba`'s A<<24|B<<16|G<<8|R order).
+fn mix(a: u32, b: u32, t: f32) -> u32 {
+    let t = t.clamp(0.0, 1.0);
+    let channel = |shift: u32| {
+        let from = ((a >> shift) & 0xff) as f32;
+        let to = ((b >> shift) & 0xff) as f32;
+        (from + (to - from) * t).round() as u32
+    };
+    (channel(24) << 24) | (channel(16) << 16) | (channel(8) << 8) | channel(0)
 }
 
 #[derive(Clone, Copy)]
@@ -431,6 +479,7 @@ struct Paint<'a, 'b> {
     oy: f32,
     s: f32,
     cursor: (f32, f32),
+    side_anim: f32,
     theme: Theme,
 }
 
@@ -490,6 +539,11 @@ impl Paint<'_, '_> {
     fn text_right(&mut self, face: Face, size: f32, right: f32, y: f32, color: u32, value: &str) {
         let width = self.ui.measure(face, size * self.s, value) / self.s;
         self.text(face, size, right - width, y, color, value);
+    }
+
+    /// Text whose line box is visually centred on `cy`.
+    fn text_mid(&mut self, face: Face, size: f32, x: f32, cy: f32, color: u32, value: &str) {
+        self.text(face, size, x, cy - size * 0.725 + 0.5, color, value);
     }
 
     fn text_spaced(
@@ -601,29 +655,28 @@ impl Paint<'_, '_> {
         );
     }
 
-    fn toggle(&mut self, rect: Rect, on: bool, anim: f32) {
+    fn toggle(&mut self, rect: Rect, anim: f32) {
         let theme = self.theme;
-        let track = if on { theme.accent } else { theme.toggle_off };
+        let t = anim.clamp(0.0, 1.0);
+        let track = mix(theme.toggle_off, theme.accent, t);
         self.rounded(rect.x, rect.y, rect.w, rect.h, rect.h / 2.0, track);
-        if !on {
-            self.border(
-                rect.x,
-                rect.y,
-                rect.w,
-                rect.h,
-                rect.h / 2.0,
-                theme.toggle_border,
-            );
-        }
+        self.border(
+            rect.x,
+            rect.y,
+            rect.w,
+            rect.h,
+            rect.h / 2.0,
+            mix(theme.toggle_border, theme.accent, t),
+        );
         let knob = rect.h - 4.0;
-        let offset = (rect.w - knob - 4.0) * anim.clamp(0.0, 1.0);
+        let offset = (rect.w - knob - 4.0) * t;
         self.rounded(
             rect.x + 2.0 + offset,
             rect.y + 2.0,
             knob,
             knob,
             knob / 2.0,
-            if on { theme.knob_on } else { theme.knob_off },
+            mix(theme.knob_off, theme.knob_on, t),
         );
     }
 
@@ -642,32 +695,34 @@ impl Paint<'_, '_> {
         self.draw_sidebar(view, main);
         self.draw_content(view, main);
         if view.side != SIDE_NONE {
+            let saved = self.ox;
+            self.ox += (1.0 - self.side_anim) * 26.0 * self.s;
             self.draw_side(view);
+            self.ox = saved;
         }
     }
 
     fn draw_sidebar(&mut self, view: &View<'_>, main: Rect) {
         let theme = self.theme;
-        self.icon("logo", main.x + 32.0, main.y + 38.0, 26.0, u32::MAX);
+        self.icon("logo", main.x + 30.0, main.y + 34.0, 24.0, u32::MAX);
         self.text_spaced(
             Face::Medium,
-            13.0,
-            main.x + 52.0,
-            main.y + 27.0,
+            12.5,
+            main.x + 48.0,
+            main.y + 23.0,
             1.8,
             theme.strong,
             "PRISM",
         );
         self.text_spaced(
             Face::Medium,
-            8.5,
-            main.x + 32.0,
-            main.y + 64.0,
+            8.0,
+            main.x + 30.0,
+            main.y + 58.0,
             1.8,
             theme.faint,
             "FEATURES",
         );
-        const FEATURE_ICONS: [&str; 5] = ["sword", "running", "camera", "person", "dots"];
         for (index, name) in view.categories.iter().enumerate() {
             let row = category_row(view.side, index);
             let active = view.category == index;
@@ -677,20 +732,20 @@ impl Paint<'_, '_> {
             } else if self.has(row) {
                 self.rounded(row.x, row.y, row.w, row.h, 9.0, theme.hover);
             }
-            let (_, cy) = row.center();
-            let icon = FEATURE_ICONS.get(index).copied().unwrap_or("dots");
+            let cy = row.y + row.h / 2.0;
+            let icon = category_icon(index);
             self.icon(
                 icon,
-                row.x + 18.0,
+                row.x + 17.0,
                 cy,
-                16.0,
+                15.0,
                 if active { theme.accent } else { theme.icon },
             );
-            self.text(
+            self.text_mid(
                 if active { Face::Medium } else { Face::Regular },
-                14.0,
-                row.x + 36.0,
-                cy - 14.0 * 0.725,
+                13.5,
+                row.x + 33.0,
+                cy,
                 if active {
                     theme.accent_light
                 } else {
@@ -701,9 +756,9 @@ impl Paint<'_, '_> {
         }
         self.text_spaced(
             Face::Medium,
-            8.5,
-            main.x + 32.0,
-            main.y + 270.0,
+            8.0,
+            main.x + 30.0,
+            main.y + 246.0,
             1.8,
             theme.faint,
             "MANAGER",
@@ -718,18 +773,18 @@ impl Paint<'_, '_> {
             } else if self.has(row) {
                 self.rounded(row.x, row.y, row.w, row.h, 9.0, theme.hover);
             }
-            let (_, cy) = row.center();
+            let cy = row.y + row.h / 2.0;
             let color = if active { theme.accent } else { theme.icon };
             if index == 0 {
-                self.keyboard(row.x + 18.0, cy, 1.05, color);
+                self.keyboard(row.x + 17.0, cy, 0.95, color);
             } else {
-                self.icon("cog", row.x + 18.0, cy, 15.0, color);
+                self.icon("folder", row.x + 17.0, cy, 15.0, color);
             }
-            self.text(
+            self.text_mid(
                 if active { Face::Medium } else { Face::Regular },
-                14.0,
-                row.x + 36.0,
-                cy - 14.0 * 0.725,
+                13.5,
+                row.x + 33.0,
+                cy,
                 if active {
                     theme.accent_light
                 } else {
@@ -740,25 +795,25 @@ impl Paint<'_, '_> {
         }
         self.fill(
             main.x + 16.0,
-            main.y + 362.0,
+            main.y + 334.0,
             SIDEBAR_W - 32.0,
             1.0,
             theme.divider,
         );
-        self.icon("person", main.x + 34.0, main.y + 392.0, 24.0, theme.muted);
+        self.icon("person", main.x + 32.0, main.y + 358.0, 22.0, theme.muted);
         self.text(
             Face::Medium,
-            12.5,
-            main.x + 52.0,
-            main.y + 374.0,
+            12.0,
+            main.x + 48.0,
+            main.y + 342.0,
             theme.strong,
             "Player",
         );
         self.text_spaced(
             Face::Regular,
-            8.0,
-            main.x + 52.0,
-            main.y + 392.0,
+            7.5,
+            main.x + 48.0,
+            main.y + 358.0,
             1.2,
             theme.faint,
             "PREVIEW BUILD",
@@ -783,13 +838,13 @@ impl Paint<'_, '_> {
             },
         );
         let cy = search.y + search.h / 2.0;
-        self.icon("search", search.x + 20.0, cy, 14.0, theme.muted);
+        self.icon("search", search.x + 18.0, cy, 13.0, theme.muted);
         if view.query.is_empty() {
-            self.text(
+            self.text_mid(
                 Face::Regular,
-                13.0,
-                search.x + 36.0,
-                cy - 13.0 * 0.725,
+                12.5,
+                search.x + 34.0,
+                cy,
                 theme.faint,
                 "Search something",
             );
@@ -799,14 +854,7 @@ impl Paint<'_, '_> {
             } else {
                 view.query.to_string()
             };
-            self.text(
-                Face::Regular,
-                13.0,
-                search.x + 36.0,
-                cy - 13.0 * 0.725,
-                theme.ink,
-                &shown,
-            );
+            self.text_mid(Face::Regular, 12.5, search.x + 34.0, cy, theme.ink, &shown);
         }
         if !view.query.is_empty() {
             let clear = search_clear(side);
@@ -815,11 +863,11 @@ impl Paint<'_, '_> {
             self.line(x - 4.0, y + 4.0, x + 4.0, y - 4.0, 1.4, theme.icon);
         }
 
-        let header_y = main.y + 68.0;
+        let header_y = main.y + 64.0;
         if view.query.is_empty() {
             self.text(
                 Face::Medium,
-                16.0,
+                15.5,
                 main.x + CONTENT_X,
                 header_y,
                 theme.strong,
@@ -827,16 +875,16 @@ impl Paint<'_, '_> {
             );
             self.text_right(
                 Face::Regular,
-                8.0,
+                7.5,
                 main.x + CONTENT_X + CONTENT_W,
-                header_y + 7.0,
+                header_y + 6.0,
                 theme.faint,
                 "CLICK A ROW TO OPEN SETTINGS",
             );
         } else {
             self.text(
                 Face::Medium,
-                16.0,
+                15.5,
                 main.x + CONTENT_X,
                 header_y,
                 theme.accent,
@@ -845,9 +893,9 @@ impl Paint<'_, '_> {
             let count = format!("{} MATCHES", view.visible.len());
             self.text_right(
                 Face::Regular,
-                8.0,
+                7.5,
                 main.x + CONTENT_X + CONTENT_W,
-                header_y + 7.0,
+                header_y + 6.0,
                 theme.faint,
                 &count,
             );
@@ -897,7 +945,7 @@ impl Paint<'_, '_> {
             Face::Regular,
             7.5,
             main.x + CONTENT_X,
-            main.y + 344.0,
+            main.y + 302.0,
             0.9,
             theme.faint,
             "VISUAL PREVIEW / MODULES HAVE NO GAMEPLAY EFFECT",
@@ -915,6 +963,7 @@ impl Paint<'_, '_> {
     ) {
         let theme = self.theme;
         let rect = module_row(side, column, row);
+        let cy = rect.y + rect.h / 2.0;
         if self.has(rect) {
             self.rounded(
                 rect.x + 2.0,
@@ -926,13 +975,12 @@ impl Paint<'_, '_> {
             );
         }
         let enabled = view.enabled[category][module];
-        self.text(
-            Face::Regular,
-            14.0,
-            rect.x + 14.0,
-            rect.y + 17.0,
-            if enabled { theme.strong } else { theme.ink },
-            view.modules[category][module],
+        self.icon(
+            category_icon(category),
+            rect.x + 17.0,
+            cy,
+            15.0,
+            if enabled { theme.accent } else { theme.icon },
         );
         let bind = view.binds[category][module].as_deref();
         let mut detail = String::new();
@@ -945,13 +993,31 @@ impl Paint<'_, '_> {
             }
             detail.push_str(&key_label(key));
         }
-        if !detail.is_empty() {
+        let name_color = if enabled { theme.strong } else { theme.ink };
+        if detail.is_empty() {
+            self.text_mid(
+                Face::Regular,
+                13.5,
+                rect.x + 33.0,
+                cy,
+                name_color,
+                view.modules[category][module],
+            );
+        } else {
+            self.text(
+                Face::Regular,
+                13.0,
+                rect.x + 33.0,
+                cy - 12.5,
+                name_color,
+                view.modules[category][module],
+            );
             self.text_spaced(
                 Face::Medium,
-                8.0,
-                rect.x + 14.0,
-                rect.y + 37.0,
-                1.1,
+                7.0,
+                rect.x + 33.0,
+                cy + 2.0,
+                1.0,
                 if bind.is_some() {
                     theme.accent
                 } else {
@@ -961,18 +1027,15 @@ impl Paint<'_, '_> {
             );
         }
         let (kx, ky) = keyboard_hit(side, column, row).center();
-        self.keyboard(kx, ky, 1.0, theme.muted);
-        let (dx, dy) = dots_hit(side, column, row).center();
-        self.icon("cog", dx, dy, 14.0, theme.muted);
+        self.keyboard(kx, ky, 0.9, theme.muted);
         self.toggle(
             toggle_row(side, column, row),
-            enabled,
             view.animation[category][module],
         );
         if row < 2 && view.visible.get(column * 3 + row + 1).is_some() {
             self.fill(
                 rect.x + 12.0,
-                rect.y + rect.h - 1.0,
+                rect.y + rect.h + 2.5,
                 rect.w - 24.0,
                 1.0,
                 theme.divider,
@@ -1086,27 +1149,22 @@ impl Paint<'_, '_> {
             );
             return;
         };
-        let enabled = view.enabled[category][module];
         self.text_spaced(
             Face::Medium,
             8.5,
             frame.x + 18.0,
-            frame.y + 94.0,
+            frame.y + 86.0,
             1.6,
             theme.faint,
             "ENABLED",
         );
-        self.toggle(
-            settings_toggle(side),
-            enabled,
-            view.animation[category][module],
-        );
+        self.toggle(settings_toggle(side), view.animation[category][module]);
 
         self.text_spaced(
             Face::Medium,
             8.5,
             frame.x + 18.0,
-            frame.y + 134.0,
+            frame.y + 122.0,
             1.6,
             theme.faint,
             "KEY BIND",
@@ -1172,7 +1230,7 @@ impl Paint<'_, '_> {
             Face::Regular,
             7.0,
             frame.x + 18.0,
-            frame.y + 200.0,
+            frame.y + 180.0,
             0.9,
             theme.faint,
             "BACKSPACE / DELETE CLEARS THE BIND",
@@ -1182,7 +1240,7 @@ impl Paint<'_, '_> {
             Face::Medium,
             8.5,
             frame.x + 18.0,
-            frame.y + 224.0,
+            frame.y + 204.0,
             1.6,
             theme.faint,
             "VALUE",
@@ -1192,7 +1250,7 @@ impl Paint<'_, '_> {
             Face::Medium,
             10.0,
             frame.x + frame.w - 18.0,
-            frame.y + 222.0,
+            frame.y + 202.0,
             theme.accent,
             &percent,
         );
@@ -1221,10 +1279,10 @@ impl Paint<'_, '_> {
             Face::Regular,
             7.0,
             frame.x + 18.0,
-            frame.y + 264.0,
+            frame.y + 244.0,
             0.9,
             theme.faint,
-            "CLICK THE TRACK TO SET THE STRENGTH",
+            "DRAG THE TRACK TO SET THE STRENGTH",
         );
 
         let done = settings_done(side);
@@ -1583,6 +1641,19 @@ mod tests {
         }
         let card = card_rect(SIDE_NONE, 1);
         assert!(card.contains(row.center().0, row.center().1));
+        let last = module_row(SIDE_NONE, 1, 2);
+        assert!(last.y + last.h <= card.y + card.h);
+    }
+
+    #[test]
+    fn categories_keep_their_icon_on_every_module() {
+        for (category, icon) in ["sword", "running", "camera", "person", "dots"]
+            .iter()
+            .enumerate()
+        {
+            assert_eq!(category_icon(category), *icon);
+        }
+        assert_eq!(category_icon(9), "dots");
     }
 
     #[test]

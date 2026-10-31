@@ -69,6 +69,12 @@ pub struct GuiState {
     pub config_selected: Option<usize>,
     pub status: String,
     pub loaded: bool,
+    /// Panel fade/slide-in, stepped by the renderer.
+    pub open: f32,
+    /// Right-hand window slide-in, stepped by the renderer.
+    pub side_anim: f32,
+    /// True while the VALUE slider is grabbed.
+    pub dragging: bool,
 }
 
 impl Default for GuiState {
@@ -88,6 +94,9 @@ impl Default for GuiState {
             config_selected: None,
             status: String::new(),
             loaded: false,
+            open: 0.0,
+            side_anim: 0.0,
+            dragging: false,
         }
     }
 }
@@ -107,6 +116,9 @@ pub static GUI: Mutex<GuiState> = Mutex::new(GuiState {
     config_selected: None,
     status: String::new(),
     loaded: false,
+    open: 0.0,
+    side_anim: 0.0,
+    dragging: false,
 });
 
 impl GuiState {
@@ -155,21 +167,28 @@ impl GuiState {
     }
 
     pub fn open_module(&mut self, category: usize, module: usize) {
+        if self.side == SIDE_NONE {
+            self.side_anim = 0.0;
+        }
         self.side = SIDE_MODULE;
         self.selected = Some((category, module));
         self.waiting_bind = false;
+        self.dragging = false;
     }
 
     pub fn close_side(&mut self) {
         self.side = SIDE_NONE;
         self.selected = None;
         self.waiting_bind = false;
+        self.dragging = false;
+        self.side_anim = 0.0;
     }
 
     pub fn reset_ui(&mut self) {
         self.close_side();
         self.search_focus = false;
         self.query.clear();
+        self.open = 0.0;
     }
 
     pub fn serialize(&self) -> String {

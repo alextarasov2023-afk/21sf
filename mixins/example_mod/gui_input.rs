@@ -115,6 +115,17 @@ fn gui_input(
     }
     if panel::is_open() {
         if let WindowEvent::MouseInput {
+            state: ElementState::Released,
+            button: MouseButton::Left,
+            ..
+        } = event
+        {
+            panel::GUI
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .dragging = false;
+        }
+        if let WindowEvent::MouseInput {
             state: ElementState::Pressed,
             button: MouseButton::Left,
             ..
@@ -126,6 +137,7 @@ fn gui_input(
             let mut state = panel::GUI.lock().unwrap_or_else(|e| e.into_inner());
             let side = state.side;
             state.search_focus = false;
+            state.dragging = false;
             let mut handled = false;
             if side != panel::SIDE_NONE {
                 if prism_ui::side_close(side).contains(cx, cy) {
@@ -144,6 +156,7 @@ fn gui_input(
                             let value =
                                 ((cx - track.x) / track.w * 100.0).round().clamp(0.0, 100.0);
                             state.values[category][module] = value as u8;
+                            state.dragging = true;
                             handled = true;
                         } else if prism_ui::settings_done(side).contains(cx, cy) {
                             state.close_side();
@@ -221,9 +234,13 @@ fn gui_input(
                             if state.side == target {
                                 state.close_side();
                             } else {
+                                if state.side == panel::SIDE_NONE {
+                                    state.side_anim = 0.0;
+                                }
                                 state.side = target;
                                 state.selected = None;
                                 state.waiting_bind = false;
+                                state.dragging = false;
                                 if target == panel::SIDE_CONFIG {
                                     state.refresh_configs();
                                     if state.config_selected.is_none() && !state.configs.is_empty()

@@ -5,23 +5,29 @@
 The native bundle includes an experimental in-game panel styled after the
 supplied dark launcher mockup. Text uses Horizon's bundled Geist Regular/Medium
 faces. The logo and the module icons are the supplied raster assets (P-logo,
-sword, running, camera, person, cog, three dots, magnifier), embedded as base64
-PNGs in `icons.rs` and generated from `tools/icons/` by
+sword, running, camera, person, cog, open folder, three dots, magnifier),
+embedded as base64 PNGs in `icons.rs` and generated from `tools/icons/` by
 `tools/gen_icons.mjs`; the keyboard glyph is still drawn from vector shapes.
+Every module row reuses the icon of its own category, so Combat rows show the
+sword, Movement the runner and so on, and Config uses the open-folder asset.
 They are decoded once and uploaded into the HUD glyph atlas, so the package
 stays source-only.
 
 The panel is centred on a 1280×640 design surface: a sidebar with the PRISM
 logo and wordmark, FEATURES (Combat, Movement, Visuals, Player, Misc), MANAGER
 (Binds, Config) and a player row, plus a content area with a search field and
-two columns of three module cards. When a settings, binds or config window
-opens, the panel slides left so the panel and window are centred together.
+two columns of three module cards. Rows and windows are sized to their text so
+the panel stays compact. When a settings, binds or config window opens, the
+panel slides left so the panel and window are centred together. The panel fades
+and lifts in when opened, side windows slide in, and switches/slider animate
+between states.
 
 While in a world, press **Right Shift** to open the panel and **Escape** or
 **Right Shift** to close it. Click a category to change the listed modules;
 click a module's switch to toggle it; click anywhere else on a module row to
 open its settings in the right-hand window (ENABLED switch, KEY BIND field,
-VALUE slider, DONE). Clicking the keyboard icon or the key box starts a key
+VALUE slider, DONE). The VALUE slider follows the cursor while the mouse button
+is held, so it can be dragged smoothly. Clicking the keyboard icon or the key box starts a key
 capture; Escape cancels it, Backspace/Delete clears the bind. A bound key
 toggles the placeholder while playing, without consuming the game's own key
 action. Right Shift and Escape are reserved.

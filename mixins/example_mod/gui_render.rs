@@ -28,8 +28,12 @@ fn gui_render(mut batch: HudBatch, game: &mut crate::game::Game<'_>) -> HudBatch
         configs: &state.configs,
         config_selected: state.config_selected,
         status: &state.status,
+        open: &mut state.open,
+        side_anim: &mut state.side_anim,
+        dragging: state.dragging,
     };
     prism_ui::render(&game.gui.atlas, &mut batch, game.cursor, &mut view);
     state.animation = view.animation;
+    state.values = view.values;
     batch
 }
