@@ -3,10 +3,14 @@
 ## Experimental Yaya click GUI
 
 The native bundle includes an experimental in-game panel. While in a world,
-press **Right Shift** to open it; click **Smooth camera** to change Horizon's
-cinematic camera, or press **Escape**, **Right Shift**, or the close button to
-close it. The panel is not a collection of gameplay modules: features such as
-Fly, ESP and KillAura are not implemented.
+press **Right Shift** to open it and **Escape** or **Right Shift** to close it.
+Click a category or a module row to change its visual preview. All switches are
+placeholders: features such as Fly, ESP and KillAura are not implemented.
+Click the `...` on a module row to open its preview settings. Click the bind
+field and press a key; Escape cancels, Backspace/Delete clears it. A bound key
+toggles the placeholder while playing, without consuming the game's own key
+action. Right Shift and Escape are reserved. The preview value and binds live
+in memory only and reset when the game exits; they do not change gameplay.
 
 The mixin planner and `cargo check` were run against the pinned Horizon source;
 interactive rendering, input and launcher installation have not yet been
