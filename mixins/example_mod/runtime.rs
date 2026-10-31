@@ -47,7 +47,7 @@ pub const MANAGER: [&str; 3] = ["Binds", "Config", "Themes"];
 pub const MODES: [&str; 4] = ["Normal", "Smooth", "Instant", "Legacy"];
 pub const THEMES: [&str; 5] = ["Azure", "Violet", "Emerald", "Amber", "Rose"];
 
-/// Which window sits to the right of the panel; mirrors `prism_ui::SIDE_*`.
+/// Which manager page replaces the module content; mirrors `prism_ui::SIDE_*`.
 pub const SIDE_NONE: usize = 0;
 pub const SIDE_BINDS: usize = 1;
 pub const SIDE_CONFIG: usize = 2;
@@ -76,7 +76,7 @@ pub struct GuiState {
     pub loaded: bool,
     /// Panel fade/slide-in, stepped by the renderer.
     pub open: f32,
-    /// Right-hand window slide-in, stepped by the renderer.
+    /// Manager-page slide-in, stepped by the renderer.
     pub side_anim: f32,
     /// True while the VALUE slider is grabbed.
     pub dragging: bool,

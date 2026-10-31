@@ -3,10 +3,11 @@
 // (`crates/horizon-client/src/game.rs`) is compiled into the binary crate,
 // while the launcher's `Ui` widgets are crate-private to the library.
 //
-// Everything here is authored on a 1280x640 design surface. The main panel is
-// always centred; when a manager window opens, the panel + window pair stays
-// centred as one group. The module grid is 3x2 short chips and the selected
-// module's drop-down settings sit inline underneath. The game module snapshots
+// Everything here is authored on a 1280x640 design surface. The main panel
+// always stays centred. Manager pages replace the module content inside that
+// same panel instead of opening a separate window. The module grid is 3x2
+// short chips and the selected module's drop-down settings sit inline
+// underneath. The game module snapshots
 // its state into `View` and calls `render`; input hit-tests the same public
 // `Rect`s, so drawing and clicking cannot disagree. Icons and the logo are the
 // bundled PNGs in `example_mod_icons`, uploaded once into the bottom strip of
@@ -25,8 +26,6 @@ pub const DESIGN_H: f32 = 640.0;
 pub const PANEL_W: f32 = 950.0;
 pub const PANEL_H: f32 = 520.0;
 pub const PANEL_Y: f32 = (DESIGN_H - PANEL_H) / 2.0;
-pub const SIDE_W: f32 = 280.0;
-pub const SIDE_GAP: f32 = 14.0;
 pub const SIDEBAR_W: f32 = 188.0;
 
 pub const CONTENT_X: f32 = 208.0;
@@ -42,8 +41,7 @@ pub const ROW_TOP: f32 = 108.0;
 pub const INLINE_Y: f32 = 252.0;
 pub const INLINE_H: f32 = 248.0;
 
-/// Mirrors `example_mod::SIDE_*` in the game module: 0 closed, then the
-/// manager windows.
+/// Mirrors `example_mod::SIDE_*` in the game module: modules, then manager pages.
 pub const SIDE_NONE: usize = 0;
 pub const SIDE_BINDS: usize = 1;
 pub const SIDE_CONFIG: usize = 2;
@@ -75,27 +73,23 @@ impl Rect {
     }
 }
 
-/// The main panel, centred on its own or together with the right window.
-pub fn main_rect(side: usize) -> Rect {
-    let width = if side == SIDE_NONE {
-        PANEL_W
-    } else {
-        PANEL_W + SIDE_GAP + SIDE_W
-    };
+/// The main panel never moves when a sidebar page changes.
+pub fn main_rect(_side: usize) -> Rect {
     Rect {
-        x: (DESIGN_W - width) / 2.0,
+        x: (DESIGN_W - PANEL_W) / 2.0,
         y: PANEL_Y,
         w: PANEL_W,
         h: PANEL_H,
     }
 }
 
+/// Manager pages use the whole content area of the main panel.
 pub fn side_rect(side: usize) -> Rect {
     let main = main_rect(side);
     Rect {
-        x: main.x + PANEL_W + SIDE_GAP,
-        y: PANEL_Y,
-        w: SIDE_W,
+        x: main.x + CONTENT_X,
+        y: main.y,
+        w: CONTENT_W,
         h: PANEL_H,
     }
 }
@@ -189,8 +183,8 @@ pub fn profile_plate(side: usize) -> Rect {
 pub fn side_close(side: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
-        x: frame.x + frame.w - 38.0,
-        y: frame.y + 16.0,
+        x: frame.x + frame.w - 24.0,
+        y: frame.y + 22.0,
         w: 24.0,
         h: 24.0,
     }
@@ -199,9 +193,9 @@ pub fn side_close(side: usize) -> Rect {
 pub fn binds_row(side: usize, index: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
-        x: frame.x + 20.0,
-        y: frame.y + 92.0 + index as f32 * 44.0,
-        w: frame.w - 40.0,
+        x: frame.x,
+        y: frame.y + 96.0 + index as f32 * 44.0,
+        w: frame.w,
         h: 38.0,
     }
 }
@@ -209,32 +203,32 @@ pub fn binds_row(side: usize, index: usize) -> Rect {
 pub fn binds_clear(side: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
-        x: frame.x + 20.0,
-        y: frame.y + frame.h - 60.0,
-        w: frame.w - 40.0,
-        h: 44.0,
+        x: frame.x,
+        y: frame.y + 456.0,
+        w: frame.w,
+        h: 36.0,
     }
 }
 
 pub fn config_row(side: usize, index: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
-        x: frame.x + 20.0,
-        y: frame.y + 92.0 + index as f32 * 38.0,
-        w: frame.w - 40.0,
-        h: 34.0,
+        x: frame.x,
+        y: frame.y + 96.0 + index as f32 * 46.0,
+        w: frame.w,
+        h: 40.0,
     }
 }
 
-/// `which`: 0 new, 1 save, 2 load, 3 delete; a 2x2 block of buttons.
+/// `which`: 0 new, 1 save, 2 load, 3 delete; one compact row of buttons.
 pub fn config_button(side: usize, which: usize) -> Rect {
     let frame = side_rect(side);
-    let column = (which % 2) as f32;
-    let row = (which / 2) as f32;
+    let gap = 10.0;
+    let width = (frame.w - gap * 3.0) / 4.0;
     Rect {
-        x: frame.x + 20.0 + column * 124.0,
-        y: frame.y + 404.0 + row * 46.0,
-        w: 112.0,
+        x: frame.x + which as f32 * (width + gap),
+        y: frame.y + 452.0,
+        w: width,
         h: 40.0,
     }
 }
@@ -242,9 +236,9 @@ pub fn config_button(side: usize, which: usize) -> Rect {
 pub fn theme_row(side: usize, index: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
-        x: frame.x + 20.0,
-        y: frame.y + 92.0 + index as f32 * 56.0,
-        w: frame.w - 40.0,
+        x: frame.x,
+        y: frame.y + 96.0 + index as f32 * 56.0,
+        w: frame.w,
         h: 48.0,
     }
 }
@@ -253,10 +247,10 @@ pub fn theme_row(side: usize, index: usize) -> Rect {
 pub fn theme_preview(side: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
-        x: frame.x + 20.0,
+        x: frame.x,
         y: frame.y + 388.0,
-        w: frame.w - 40.0,
-        h: 108.0,
+        w: frame.w,
+        h: 104.0,
     }
 }
 
@@ -404,7 +398,7 @@ pub struct View<'a> {
     pub player_skin: &'a str,
     /// Panel open fade/slide, 0..1; stepped by [`render`].
     pub open: &'a mut f32,
-    /// Right-hand window slide-in, 0..1; stepped by [`render`].
+    /// Manager-page slide-in, 0..1; stepped by [`render`].
     pub side_anim: &'a mut f32,
     /// True while the VALUE slider is held, so the cursor drives it.
     pub dragging: bool,
@@ -829,12 +823,14 @@ impl Paint<'_, '_> {
             theme.divider,
         );
         self.draw_sidebar(view, main);
-        self.draw_content(view, main);
-        if view.side != SIDE_NONE {
-            let saved = self.ox;
-            self.ox += (1.0 - self.side_anim) * 26.0 * self.s;
+        if view.side == SIDE_NONE {
+            self.draw_content(view, main);
+        } else {
+            // Only the manager content moves; the main window stays centred.
+            let saved = self.oy;
+            self.oy += (1.0 - self.side_anim) * 8.0 * self.s;
             self.draw_side(view);
-            self.ox = saved;
+            self.oy = saved;
         }
     }
 
@@ -843,7 +839,7 @@ impl Paint<'_, '_> {
         self.icon("logo", main.x + 30.0, main.y + 36.0, 28.0, u32::MAX);
         for (index, name) in view.categories.iter().enumerate() {
             let row = category_row(view.side, index);
-            let active = view.category == index && view.query.is_empty();
+            let active = view.side == SIDE_NONE && view.category == index && view.query.is_empty();
             self.sidebar_entry(row, active, false);
             let cy = row.y + row.h / 2.0;
             self.icon(
@@ -908,15 +904,14 @@ impl Paint<'_, '_> {
             1.0,
             theme.divider,
         );
-        // A rounded avatar: the square skin face sits inside a rounded plate,
-        // so its corners stay behind the plate's corners.
+        // The face fills a genuinely square plate, matching Minecraft heads.
         let plate = profile_plate(view.side);
         let (fx, fy) = plate.center();
-        self.rounded(plate.x, plate.y, plate.w, plate.h, 11.0, theme.raised);
-        if !self.face(view.player_skin, fx, fy, 30.0) {
-            self.icon("person", fx, fy, 19.0, theme.muted);
+        self.fill(plate.x, plate.y, plate.w, plate.h, theme.raised);
+        if !self.face(view.player_skin, fx, fy, plate.w) {
+            self.icon("person", fx, fy, 22.0, theme.muted);
         }
-        self.border(plate.x, plate.y, plate.w, plate.h, 11.0, theme.border);
+        self.border(plate.x, plate.y, plate.w, plate.h, 0.0, theme.border);
         self.text_mid(
             Face::Medium,
             13.5,
@@ -1338,8 +1333,6 @@ impl Paint<'_, '_> {
         let theme = self.theme;
         let side = view.side;
         let frame = side_rect(side);
-        self.rounded(frame.x, frame.y, frame.w, frame.h, 16.0, theme.window);
-        self.border(frame.x, frame.y, frame.w, frame.h, 16.0, theme.border);
 
         let close = side_close(side);
         let (x, y) = close.center();
@@ -1375,7 +1368,7 @@ impl Paint<'_, '_> {
         self.text_spaced(
             Face::Medium,
             8.0,
-            frame.x + 20.0,
+            frame.x,
             frame.y + 20.0,
             1.8,
             theme.faint,
@@ -1384,7 +1377,7 @@ impl Paint<'_, '_> {
         self.text(
             Face::Medium,
             18.0,
-            frame.x + 20.0,
+            frame.x,
             frame.y + 34.0,
             theme.strong,
             &title,
@@ -1393,7 +1386,7 @@ impl Paint<'_, '_> {
             self.text_spaced(
                 Face::Regular,
                 7.5,
-                frame.x + 20.0,
+                frame.x,
                 frame.y + 62.0,
                 1.0,
                 if side == SIDE_CONFIG && !view.status.is_empty() {
@@ -1404,13 +1397,7 @@ impl Paint<'_, '_> {
                 &detail,
             );
         }
-        self.fill(
-            frame.x + 20.0,
-            frame.y + 82.0,
-            frame.w - 40.0,
-            1.0,
-            theme.divider,
-        );
+        self.fill(frame.x, frame.y + 82.0, frame.w, 1.0, theme.divider);
 
         match side {
             SIDE_BINDS => self.draw_binds(view, frame),
@@ -1828,16 +1815,17 @@ mod tests {
     }
 
     #[test]
-    fn panels_are_centred() {
-        let closed = main_rect(SIDE_NONE);
-        assert!(close(closed.x + closed.w / 2.0, DESIGN_W / 2.0));
-        let group = PANEL_W + SIDE_GAP + SIDE_W;
-        assert!(group <= DESIGN_W);
-        let open = main_rect(SIDE_BINDS);
-        assert!(close(open.x + group / 2.0, DESIGN_W / 2.0));
-        let side = side_rect(SIDE_BINDS);
-        assert!(close(side.x + side.w, open.x + group));
-        assert!(close(side.y, PANEL_Y));
+    fn panel_stays_centred_on_every_page() {
+        let expected = main_rect(SIDE_NONE);
+        assert!(close(expected.x + expected.w / 2.0, DESIGN_W / 2.0));
+        assert!(close(expected.y + expected.h / 2.0, DESIGN_H / 2.0));
+        for page in [SIDE_BINDS, SIDE_CONFIG, SIDE_THEMES] {
+            assert_eq!(main_rect(page), expected);
+            let content = side_rect(page);
+            assert!(content.x >= expected.x + SIDEBAR_W);
+            assert!(content.x + content.w <= expected.x + expected.w);
+            assert!(content.y + content.h <= expected.y + expected.h);
+        }
     }
 
     #[test]
@@ -1914,6 +1902,7 @@ mod tests {
             side_close(SIDE_BINDS),
             binds_row(SIDE_BINDS, 7),
             binds_clear(SIDE_BINDS),
+            config_row(SIDE_CONFIG, 6),
             config_button(SIDE_CONFIG, 3),
             theme_row(SIDE_THEMES, 4),
             theme_preview(SIDE_THEMES),

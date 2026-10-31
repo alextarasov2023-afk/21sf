@@ -194,7 +194,7 @@ fn gui_input(
                     }
                 }
             }
-            if !handled {
+            if !handled && side == panel::SIDE_NONE {
                 if state.mode_open {
                     if let Some((category, module)) = state.selected {
                         for option in 0..panel::MODES.len() {
@@ -225,7 +225,7 @@ fn gui_input(
                     }
                 }
             }
-            if !handled {
+            if !handled && side == panel::SIDE_NONE {
                 let search = prism_ui::search_rect(side);
                 if prism_ui::search_clear(side).contains(cx, cy) {
                     state.query.clear();
@@ -235,60 +235,60 @@ fn gui_input(
                     state.search_focus = true;
                     handled = true;
                 }
-                if !handled {
-                    for index in 0..5 {
-                        if prism_ui::category_row(side, index).contains(cx, cy) {
-                            state.category = index;
-                            state.query.clear();
-                            state.selected = Some((index, 0));
-                            state.mode_open = false;
-                            handled = true;
-                            break;
-                        }
-                    }
-                }
-                if !handled {
-                    for index in 0..panel::MANAGER.len() {
-                        if prism_ui::manager_row(side, index).contains(cx, cy) {
-                            let target = panel::SIDE_BINDS + index;
-                            if state.side == target {
-                                state.close_side();
-                            } else {
-                                if state.side == panel::SIDE_NONE {
-                                    state.side_anim = 0.0;
-                                }
-                                state.side = target;
-                                state.waiting_bind = false;
-                                state.mode_open = false;
-                                state.dragging = false;
-                                if target == panel::SIDE_CONFIG {
-                                    state.refresh_configs();
-                                    if state.config_selected.is_none() && !state.configs.is_empty()
-                                    {
-                                        state.config_selected = Some(0);
-                                    }
-                                }
-                            }
-                            handled = true;
-                            break;
-                        }
-                    }
-                }
-                if !handled {
-                    let visible = state.visible();
-                    for (slot, (category, module)) in visible.iter().take(6).enumerate() {
-                        let column = slot % prism_ui::COLUMNS;
-                        let row = slot / prism_ui::COLUMNS;
-                        if !prism_ui::module_row(side, column, row).contains(cx, cy) {
-                            continue;
-                        }
-                        if prism_ui::toggle_row(side, column, row).contains(cx, cy) {
-                            state.enabled[*category][*module] = !state.enabled[*category][*module];
-                        } else {
-                            state.open_module(*category, *module);
-                        }
+            }
+            // Sidebar navigation stays live on every page.
+            if !handled {
+                for index in 0..5 {
+                    if prism_ui::category_row(side, index).contains(cx, cy) {
+                        state.category = index;
+                        state.query.clear();
+                        state.selected = Some((index, 0));
+                        state.close_side();
+                        handled = true;
                         break;
                     }
+                }
+            }
+            if !handled {
+                for index in 0..panel::MANAGER.len() {
+                    if prism_ui::manager_row(side, index).contains(cx, cy) {
+                        let target = panel::SIDE_BINDS + index;
+                        if state.side == target {
+                            state.close_side();
+                        } else {
+                            if state.side == panel::SIDE_NONE {
+                                state.side_anim = 0.0;
+                            }
+                            state.side = target;
+                            state.waiting_bind = false;
+                            state.mode_open = false;
+                            state.dragging = false;
+                            if target == panel::SIDE_CONFIG {
+                                state.refresh_configs();
+                                if state.config_selected.is_none() && !state.configs.is_empty() {
+                                    state.config_selected = Some(0);
+                                }
+                            }
+                        }
+                        handled = true;
+                        break;
+                    }
+                }
+            }
+            if !handled && side == panel::SIDE_NONE {
+                let visible = state.visible();
+                for (slot, (category, module)) in visible.iter().take(6).enumerate() {
+                    let column = slot % prism_ui::COLUMNS;
+                    let row = slot / prism_ui::COLUMNS;
+                    if !prism_ui::module_row(side, column, row).contains(cx, cy) {
+                        continue;
+                    }
+                    if prism_ui::toggle_row(side, column, row).contains(cx, cy) {
+                        state.enabled[*category][*module] = !state.enabled[*category][*module];
+                    } else {
+                        state.open_module(*category, *module);
+                    }
+                    break;
                 }
             }
         }

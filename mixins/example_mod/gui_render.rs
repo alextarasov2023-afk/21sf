@@ -9,6 +9,17 @@ fn gui_render(mut batch: HudBatch, game: &mut crate::game::Game<'_>) -> HudBatch
     let state = &mut *state;
     let visible = state.visible();
     let bound = state.bound();
+    // Remote player-list entries carry the downloaded skin for this account.
+    // Singleplayer and an unfinished download use the built-in Steve skin.
+    let player_skin = game
+        .remote_tab_players()
+        .and_then(|(players, _, _)| {
+            players
+                .into_iter()
+                .find(|player| player.name == crate::game::chat::PLAYER_NAME)
+        })
+        .map(|player| player.skin)
+        .unwrap_or_else(|| "entity/player/wide/steve".to_string());
     let mut view = prism_ui::View {
         side: state.side,
         category: state.category,
@@ -34,7 +45,7 @@ fn gui_render(mut batch: HudBatch, game: &mut crate::game::Game<'_>) -> HudBatch
         config_selected: state.config_selected,
         status: &state.status,
         player_name: crate::game::chat::PLAYER_NAME,
-        player_skin: "entity/player/wide/steve",
+        player_skin: &player_skin,
         open: &mut state.open,
         side_anim: &mut state.side_anim,
         dragging: state.dragging,

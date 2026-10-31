@@ -19,9 +19,9 @@ and three manager entries (Binds, Config, Themes) styled as one continuous
 list, plus the local player's skin face and name at the bottom. The content
 area holds the search field, a 3×2 grid of short module chips, and the selected
 module's drop-down settings directly underneath, so the panel has no dead
-space. When a
-manager window opens, the panel slides left so the panel and window are centred
-together. The panel fades and lifts in when opened, side windows slide in, and
+space. Binds, Config and Themes replace the module content inside the same
+centred window rather than opening a separate side window. The panel fades and
+lifts in when opened, manager content slides gently into place, and
 switches/slider animate between states.
 
 While in a world, press **Right Shift** to open the panel and **Escape** or
