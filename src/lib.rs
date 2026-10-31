@@ -1,31 +1,26 @@
-// yaya Horizon native mod — каркас с GUI.
+// yaya Horizon native mod — overlay GUI каркас.
 
-mod gui;
+mod overlay;
 
-use gui::ClickGui;
+use overlay::Overlay;
 
-static mut GUI: Option<ClickGui> = None;
+static mut OVERLAY: Option<Overlay> = None;
 
 #[no_mangle]
 pub extern "C" fn mod_init() {
-    unsafe { GUI = Some(ClickGui::new()); }
+    unsafe { OVERLAY = Some(Overlay::new()); }
 }
 
 #[no_mangle]
 pub extern "C" fn mod_tick() {
-    // обновление GUI
-    unsafe {
-        if let Some(g) = &mut GUI {
-            g.update(1.0 / 20.0);
-        }
-    }
+    // overlay работает в отдельном потоке
 }
 
 #[no_mangle]
-pub extern "C" fn mod_render() {
+pub extern "C" fn mod_toggle_gui() {
     unsafe {
-        if let Some(g) = &GUI {
-            g.render();
+        if let Some(o) = &mut OVERLAY {
+            o.toggle();
         }
     }
 }
