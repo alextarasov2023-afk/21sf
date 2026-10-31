@@ -257,16 +257,13 @@ fn gui_input(
                 if !handled {
                     let visible = state.visible();
                     for (slot, (category, module)) in visible.iter().take(6).enumerate() {
-                        let column = slot / 3;
-                        let row = slot % 3;
+                        let column = slot % prism_ui::COLUMNS;
+                        let row = slot / prism_ui::COLUMNS;
                         if !prism_ui::module_row(side, column, row).contains(cx, cy) {
                             continue;
                         }
                         if prism_ui::toggle_row(side, column, row).contains(cx, cy) {
                             state.enabled[*category][*module] = !state.enabled[*category][*module];
-                        } else if prism_ui::keyboard_hit(side, column, row).contains(cx, cy) {
-                            state.open_module(*category, *module);
-                            state.waiting_bind = true;
                         } else {
                             state.open_module(*category, *module);
                         }

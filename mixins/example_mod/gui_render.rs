@@ -28,6 +28,8 @@ fn gui_render(mut batch: HudBatch, game: &mut crate::game::Game<'_>) -> HudBatch
         configs: &state.configs,
         config_selected: state.config_selected,
         status: &state.status,
+        player_name: crate::game::chat::PLAYER_NAME,
+        player_skin: "entity/player/wide/steve",
         open: &mut state.open,
         side_anim: &mut state.side_anim,
         dragging: state.dragging,

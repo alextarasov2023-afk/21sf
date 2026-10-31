@@ -11,13 +11,14 @@ committed here.
 | `cargo clippy --workspace --all-targets --locked --offline -- -D warnings` | Pass |
 | `cargo test --workspace --locked --offline` | 7 runtime unit tests pass |
 | `horizon-mixins apply` on the pristine pinned export | 3 injections + 3 modules staged, no errors |
-| `cargo check -p horizon-client --bin horizon-client --no-default-features` in the stage | Pass, 1m47s with a cached target dir |
-| `python3 tools/package.py` | Writes `target/example_mod-0.1.0.hnmod`, 26,014 bytes, sha256 `c99cffad…084010` |
+| `cargo check -p horizon-client --bin horizon-client --no-default-features` in the stage | Pass, 1m52s with a cached target dir |
+| `cargo test -p horizon-client --lib prism_ui` in the stage | 8 panel layout tests pass |
+| `python3 tools/package.py` | Writes `target/example_mod-0.1.0.hnmod`, 26,368 bytes, sha256 `de96b2ef…e023` |
 
 The staged build is the real gate: it injects `runtime.rs` into
 `crate::game::example_mod`, and `prism_ui.rs` plus `icons.rs` into
 `horizon_client`'s library crate, then compiles the actual client binary. The
-stage was produced on the Linux filesystem (`~/prism-stage7`) from the pristine
+stage was produced on the Linux filesystem (`~/prism-stage8`) from the pristine
 export; `tools/horizon.py` cannot stage on `/mnt/c` (`E_ATOMIC_STAGE`), and
 pointing `--workspace` at the live checkout fails `E_INVALID_PATH`.
 

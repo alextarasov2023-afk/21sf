@@ -15,19 +15,19 @@ stays source-only.
 
 The panel is centred on a 1280×640 design surface: a sidebar with the PRISM
 logo and wordmark, FEATURES (Combat, Movement, Visuals, Player, Misc), MANAGER
-(Binds, Config) and a player row, plus a content area with a search field and
-two columns of three module cards. Rows and windows are sized to their text so
-the panel stays compact. When a settings, binds or config window opens, the
-panel slides left so the panel and window are centred together. The panel fades
-and lifts in when opened, side windows slide in, and switches/slider animate
-between states.
+(Binds, Config) and the local player's skin face with their name, plus a
+content area with a search field and three columns of two module cards. Rows
+and windows are sized to their text so the panel stays compact. When a
+settings, binds or config window opens, the panel slides left so the panel and
+window are centred together. The panel fades and lifts in when opened, side
+windows slide in, and switches/slider animate between states.
 
 While in a world, press **Right Shift** to open the panel and **Escape** or
 **Right Shift** to close it. Click a category to change the listed modules;
 click a module's switch to toggle it; click anywhere else on a module row to
 open its settings in the right-hand window (ENABLED switch, KEY BIND field,
 VALUE slider, DONE). The VALUE slider follows the cursor while the mouse button
-is held, so it can be dragged smoothly. Clicking the keyboard icon or the key box starts a key
+is held, so it can be dragged smoothly. Clicking the key box starts a key
 capture; Escape cancels it, Backspace/Delete clears the bind. A bound key
 toggles the placeholder while playing, without consuming the game's own key
 action. Right Shift and Escape are reserved.
