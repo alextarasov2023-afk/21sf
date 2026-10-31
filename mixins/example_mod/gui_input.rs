@@ -29,10 +29,60 @@ fn gui_input(
                         state.waiting_bind = false;
                     }
                 }
+                if key.physical_key == PhysicalKey::Code(KeyCode::ShiftRight) {
+                    state.save_session();
+                    state.reset_ui();
+                    drop(state);
+                    panel::close();
+                    game.capture(true);
+                }
                 return core::ops::ControlFlow::Break(());
             }
-            if key.physical_key == PhysicalKey::Code(KeyCode::Escape) && state.selected.is_some() {
-                state.selected = None;
+            if key.physical_key == PhysicalKey::Code(KeyCode::ShiftRight) {
+                state.save_session();
+                state.reset_ui();
+                drop(state);
+                panel::close();
+                game.capture(true);
+                return core::ops::ControlFlow::Break(());
+            }
+            if state.search_focus {
+                match key.physical_key {
+                    PhysicalKey::Code(KeyCode::Escape) => {
+                        if state.query.is_empty() {
+                            state.search_focus = false;
+                        } else {
+                            state.query.clear();
+                        }
+                    }
+                    PhysicalKey::Code(KeyCode::Enter) => state.search_focus = false,
+                    PhysicalKey::Code(KeyCode::Backspace) => {
+                        state.query.pop();
+                    }
+                    _ => {
+                        if let Some(text) = key.text.as_deref() {
+                            for ch in text.chars() {
+                                if !ch.is_control() && state.query.chars().count() < 24 {
+                                    state.query.push(ch);
+                                }
+                            }
+                        }
+                    }
+                }
+                return core::ops::ControlFlow::Break(());
+            }
+            if key.physical_key == PhysicalKey::Code(KeyCode::Escape) {
+                if state.side != panel::SIDE_NONE {
+                    state.close_side();
+                } else if !state.query.is_empty() {
+                    state.query.clear();
+                } else {
+                    state.save_session();
+                    state.reset_ui();
+                    drop(state);
+                    panel::close();
+                    game.capture(true);
+                }
                 return core::ops::ControlFlow::Break(());
             }
         } else if game.screen == Screen::Playing
@@ -48,18 +98,18 @@ fn gui_input(
                 .activate_bind(&format!("{code:?}"));
         }
         if key.physical_key == PhysicalKey::Code(KeyCode::ShiftRight) {
+            let mut state = panel::GUI.lock().unwrap_or_else(|e| e.into_inner());
             if !panel::is_open()
                 && (game.screen != Screen::Playing || game.player.is_none() || game.title.is_some())
             {
                 return core::ops::ControlFlow::Continue(());
             }
             let open = panel::toggle();
+            if open {
+                state.ensure_loaded();
+            }
+            drop(state);
             game.capture(!open);
-            return core::ops::ControlFlow::Break(());
-        }
-        if panel::is_open() && key.physical_key == PhysicalKey::Code(KeyCode::Escape) {
-            panel::close();
-            game.capture(true);
             return core::ops::ControlFlow::Break(());
         }
     }
@@ -74,42 +124,137 @@ fn gui_input(
             let batch = HudBatch::new(window.inner_size().into());
             let (cx, cy) = prism_ui::to_design(game.cursor, batch.width, batch.height, batch.scale);
             let mut state = panel::GUI.lock().unwrap_or_else(|e| e.into_inner());
-            if let Some((category, module)) = state.selected {
-                if prism_ui::BIND_BOX.contains(cx, cy) {
-                    state.waiting_bind = true;
-                } else if prism_ui::SLIDER_HIT.contains(cx, cy) {
-                    state.values[category][module] =
-                        (((cx - prism_ui::SLIDER.x) / prism_ui::SLIDER.w * 100.0).round() as u8)
-                            .min(100);
-                } else if prism_ui::DONE.contains(cx, cy) {
-                    state.selected = None;
-                }
-            }
-            for index in 0..5 {
-                if prism_ui::category_row(index).contains(cx, cy) {
-                    state.category = index;
-                    state.selected = None;
-                    state.waiting_bind = false;
-                }
-            }
-            'rows: for column in 0..2 {
-                for row in 0..3 {
-                    let rect = prism_ui::module_row(column, row);
-                    if !rect.contains(cx, cy) {
-                        continue;
+            let side = state.side;
+            state.search_focus = false;
+            let mut handled = false;
+            if side != panel::SIDE_NONE {
+                if prism_ui::side_close(side).contains(cx, cy) {
+                    state.close_side();
+                    handled = true;
+                } else if side == panel::SIDE_MODULE {
+                    if let Some((category, module)) = state.selected {
+                        if prism_ui::settings_toggle(side).contains(cx, cy) {
+                            state.enabled[category][module] = !state.enabled[category][module];
+                            handled = true;
+                        } else if prism_ui::settings_bind(side).contains(cx, cy) {
+                            state.waiting_bind = true;
+                            handled = true;
+                        } else if prism_ui::settings_slider_hit(side).contains(cx, cy) {
+                            let track = prism_ui::settings_slider_track(side);
+                            let value =
+                                ((cx - track.x) / track.w * 100.0).round().clamp(0.0, 100.0);
+                            state.values[category][module] = value as u8;
+                            handled = true;
+                        } else if prism_ui::settings_done(side).contains(cx, cy) {
+                            state.close_side();
+                            handled = true;
+                        }
                     }
-                    let category = state.category;
-                    let index = column * 3 + row;
-                    if prism_ui::dots_hit(column, row).contains(cx, cy) {
-                        state.selected = Some((category, index));
-                        state.waiting_bind = false;
-                    } else if prism_ui::keyboard_hit(column, row).contains(cx, cy) {
-                        state.selected = Some((category, index));
-                        state.waiting_bind = true;
+                } else if side == panel::SIDE_BINDS {
+                    if prism_ui::binds_clear(side).contains(cx, cy) {
+                        for row in &mut state.binds {
+                            for bind in row.iter_mut() {
+                                *bind = None;
+                            }
+                        }
+                        handled = true;
                     } else {
-                        state.enabled[category][index] = !state.enabled[category][index];
+                        let bound = state.bound();
+                        for (index, (category, module, _)) in bound.iter().take(6).enumerate() {
+                            if prism_ui::binds_row(side, index).contains(cx, cy) {
+                                state.open_module(*category, *module);
+                                handled = true;
+                                break;
+                            }
+                        }
                     }
-                    break 'rows;
+                } else if side == panel::SIDE_CONFIG {
+                    for index in 0..state.configs.len().min(5) {
+                        if prism_ui::config_row(side, index).contains(cx, cy) {
+                            state.config_selected = Some(index);
+                            handled = true;
+                            break;
+                        }
+                    }
+                    if !handled {
+                        for which in 0..4 {
+                            if prism_ui::config_button(side, which).contains(cx, cy) {
+                                state.config_action(which);
+                                handled = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            if !handled {
+                let search = prism_ui::search_rect(side);
+                if prism_ui::search_clear(side).contains(cx, cy) {
+                    state.query.clear();
+                    state.search_focus = true;
+                    handled = true;
+                } else if search.contains(cx, cy) {
+                    state.search_focus = true;
+                    handled = true;
+                }
+                if !handled {
+                    for index in 0..5 {
+                        if prism_ui::category_row(side, index).contains(cx, cy) {
+                            state.category = index;
+                            state.query.clear();
+                            if state.side == panel::SIDE_MODULE {
+                                state.close_side();
+                            }
+                            handled = true;
+                            break;
+                        }
+                    }
+                }
+                if !handled {
+                    for index in 0..2 {
+                        if prism_ui::manager_row(side, index).contains(cx, cy) {
+                            let target = if index == 0 {
+                                panel::SIDE_BINDS
+                            } else {
+                                panel::SIDE_CONFIG
+                            };
+                            if state.side == target {
+                                state.close_side();
+                            } else {
+                                state.side = target;
+                                state.selected = None;
+                                state.waiting_bind = false;
+                                if target == panel::SIDE_CONFIG {
+                                    state.refresh_configs();
+                                    if state.config_selected.is_none() && !state.configs.is_empty()
+                                    {
+                                        state.config_selected = Some(0);
+                                    }
+                                }
+                            }
+                            handled = true;
+                            break;
+                        }
+                    }
+                }
+                if !handled {
+                    let visible = state.visible();
+                    for (slot, (category, module)) in visible.iter().take(6).enumerate() {
+                        let column = slot / 3;
+                        let row = slot % 3;
+                        if !prism_ui::module_row(side, column, row).contains(cx, cy) {
+                            continue;
+                        }
+                        if prism_ui::toggle_row(side, column, row).contains(cx, cy) {
+                            state.enabled[*category][*module] = !state.enabled[*category][*module];
+                        } else if prism_ui::keyboard_hit(side, column, row).contains(cx, cy) {
+                            state.open_module(*category, *module);
+                            state.waiting_bind = true;
+                        } else {
+                            state.open_module(*category, *module);
+                        }
+                        break;
+                    }
                 }
             }
         }

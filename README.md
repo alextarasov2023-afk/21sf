@@ -4,27 +4,42 @@
 
 The native bundle includes an experimental in-game panel styled after the
 supplied dark launcher mockup. Text uses Horizon's bundled Geist Regular/Medium
-faces, and every icon (crossed swords, four-way arrows, eye, person, connected
-nodes, gear, bag, accounts, keyboard, search, sort chevrons, menu) is drawn from
-vector shapes instead of sprites.
+faces. The logo and the module icons are the supplied raster assets (P-logo,
+sword, running, camera, person, cog, three dots, magnifier), embedded as base64
+PNGs in `icons.rs` and generated from `tools/icons/` by
+`tools/gen_icons.mjs`; the keyboard glyph is still drawn from vector shapes.
+They are decoded once and uploaded into the HUD glyph atlas, so the package
+stays source-only.
 
-The panel has a sidebar with FEATURES (Combat, Movement, Visuals, Player, Misc),
-MANAGER (Presets, Auto Buy, Accounts), an account row and a search field; the
-content area has two module columns with animated pill switches and a MODULE
-SETTINGS card for the selected row.
+The panel is centred on a 1280×640 design surface: a sidebar with the PRISM
+logo and wordmark, FEATURES (Combat, Movement, Visuals, Player, Misc), MANAGER
+(Binds, Config) and a player row, plus a content area with a search field and
+two columns of three module cards. When a settings, binds or config window
+opens, the panel slides left so the panel and window are centred together.
 
-While in a world, press **Right Shift** to open it and **Escape** or **Right
-Shift** to close it. Click a category to change the listed modules; click a row
-to toggle its switch. Click the `...` on a row to open its preview settings;
-click the bind field (or the keyboard icon) and press a key. Escape cancels a
-pending bind, Backspace/Delete clears it. A bound key toggles the placeholder
-while playing, without consuming the game's own key action. Right Shift and
-Escape are reserved. The preview value and binds live in memory only and reset
-when the game exits; they do not change gameplay. Presets, Auto Buy and
-Accounts are visual rows only.
+While in a world, press **Right Shift** to open the panel and **Escape** or
+**Right Shift** to close it. Click a category to change the listed modules;
+click a module's switch to toggle it; click anywhere else on a module row to
+open its settings in the right-hand window (ENABLED switch, KEY BIND field,
+VALUE slider, DONE). Clicking the keyboard icon or the key box starts a key
+capture; Escape cancels it, Backspace/Delete clears the bind. A bound key
+toggles the placeholder while playing, without consuming the game's own key
+action. Right Shift and Escape are reserved.
 
-The panel is drawn by `prism_ui.rs`, a public support module injected into
-`horizon_client`'s library crate: Horizon's design-system widgets are
+The search field filters every category live by module name (case-insensitive)
+and shows RESULTS instead of a category title; click the field or press a
+character to type, Escape unfocuses or clears it, and the X clears it. MANAGER
+holds Binds and Config: Binds lists the assigned keys in grid order and jumps to
+the module you click, with CLEAR ALL BINDS; Config lists the saved presets and
+offers NEW, SAVE, LOAD and DELETE with a status line.
+
+Settings persist as dependency-free text files under `config/prism/`
+(`# prism config v1`, `category=N`, `enabled=c,m`, `bind=c,m,key`,
+`value=c,m,v`). `session.cfg` is written when the panel closes and restored on
+open; named configs are only touched by the Config buttons. Module switches,
+values and binds have no gameplay effect — binds only consume their own key
+press. The panel is drawn by `prism_ui.rs`, a public support module injected
+into `horizon_client`'s library crate: Horizon's design-system widgets are
 crate-private there, while `game.rs` is compiled into the binary crate. The
 game-side helpers only snapshot state and hit-test the shared rectangles. The
 old `src/overlay.rs` scaffold is not part of this native bundle.
@@ -82,8 +97,11 @@ mixins/example_mod/
   break.rs                         Small typed hook adapter
   runtime.rs                       Panel state, binds and unit tests (standalone library)
   gui_render.rs                    Snapshots state and calls the panel renderer
-  gui_input.rs                     Right Shift, keyboard and mouse handling
-  prism_ui.rs                      Launcher-style drawing, Geist text and vector icons
+  gui_input.rs                     Right Shift, keyboard, search and mouse handling
+  prism_ui.rs                      Centred layout, Geist text, right-side settings window
+  icons.rs                         Generated base64 logo/icon payloads and decoder
+tools/gen_icons.mjs                Regenerates icons.rs from tools/icons/ sources
+tools/icons/                       Supplied logo and icon assets (P-logo, SVG, PNG)
 tools/horizon.py                   Export → plan → apply → check/build/test
 tools/test_template.py             Tiny compiled fixture; no Horizon checkout/assets needed
 tools/test_stage.py                Real pinned source audit and repeatability test
@@ -191,14 +209,16 @@ python3 tools/horizon.py check --horizon ../horizon
 python3 tools/horizon.py test --horizon ../horizon
 ```
 
-The tiny fixture compiles the actual bundle, checks the original body executes
-once with its result preserved, runs the shared runtime unit test, and verifies
-repeated source bytes/mtimes. Wrong revisions and missing targets fail before
-replacing the stage. The Rust audit checks the exact generated HEAD/helper and
-module, removes only those planned additions, then compares the remaining AST
-with pristine source. The same audit runs on a complete pinned Horizon export.
-CI runs the standalone checks and tiny fixture; the full native checks require
-the larger cached Horizon dependency set. See [VALIDATION.md](VALIDATION.md).
+`tools/test_template.py` and `tools/test_stage.py` still assert the template's
+original shape (exactly one injection and one module, and a tiny fixture without
+`Game::hud`/`window_event`), so they stop with `E_TARGET_NOT_FOUND` on this
+expanded bundle. Use the pinned plan/apply path instead:
+`horizon-mixins apply` on the pristine export, then
+`cargo check -p horizon-client --bin horizon-client --no-default-features` in the
+stage; `tools/horizon.py` fails to stage on `/mnt/c` with `E_ATOMIC_STAGE`, so run
+the CLI with `--out` on the Linux filesystem. The staging tools still reject
+wrong revisions and missing targets before replacing a stage. See
+[VALIDATION.md](VALIDATION.md).
 
 Build/staging tooling is adapted from the MIT-licensed Veinminer port. This
 repository includes no Veinminer gameplay, Minecraft assets, game binaries or

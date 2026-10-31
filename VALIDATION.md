@@ -1,30 +1,40 @@
 # Validation
 
-Validated on Linux with Rust 1.95.0 on 2026-10-30, using the exact revisions in
-`compatibility.json` and the real bundle committed here.
+Checked on 2026-10-31 with Rust 1.99.1 in WSL against the exact revisions in
+`compatibility.json` (Horizon `ba6344a`, horizon-mixins `d9c83d7`) and the bundle
+committed here.
 
 | Check | Result |
 |---|---|
+| `rustfmt --edition 2024 --check` on `prism_ui.rs`, `icons.rs`, `gui_render.rs`, `gui_input.rs`, `break.rs` | Pass |
 | `cargo fmt --all --check` | Pass |
 | `cargo clippy --workspace --all-targets --locked --offline -- -D warnings` | Pass |
-| `cargo test --workspace --locked --offline` | Runtime unit test passes |
-| `python3 tools/test_template.py` | Actual bundle compiles in the tiny fixture; original method calls/result, shared runtime, AST audit, unchanged bytes/mtimes and incompatible revision/target rejection pass |
-| `python3 tools/test_stage.py` | Complete pinned Horizon export stages deterministically; original checkout unchanged; exact HEAD/module audit passes |
-| `python3 tools/horizon.py check` | Actual `horizon-client` binary checks successfully with `--no-default-features` |
-| `python3 tools/horizon.py test` | The runtime's embedded test passes inside the actual Horizon game test binary |
+| `cargo test --workspace --locked --offline` | 7 runtime unit tests pass |
+| `horizon-mixins apply` on the pristine pinned export | 3 injections + 3 modules staged, no errors |
+| `cargo check -p horizon-client --bin horizon-client --no-default-features` in the stage | Pass, no warnings, 1m53s with a cached target dir |
+| `python3 tools/package.py` | Writes `target/example_mod-0.1.0.hnmod`, 24,335 bytes, sha256 `b61303e8…af6500` |
 
-The native check reported 69.55 seconds in Cargo, and the native test passed.
-Both reused an existing external Cargo target directory with cached
-Horizon dependencies. These are compilation/test checks, not a fresh-build
-benchmark. Staging the full export took about 24 seconds per command on this
-machine; a repeated application preserved the stage.
+The staged build is the real gate: it injects `runtime.rs` into
+`crate::game::example_mod`, and `prism_ui.rs` plus `icons.rs` into
+`horizon_client`'s library crate, then compiles the actual client binary. The
+stage was produced on the Linux filesystem (`~/prism-stage5`) from the pristine
+export; `tools/horizon.py` cannot stage on `/mnt/c` (`E_ATOMIC_STAGE`), and
+pointing `--workspace` at the live checkout fails `E_INVALID_PATH`.
+
+`tools/test_template.py` and `tools/test_stage.py` are template-shaped: they
+expect exactly one injection and one module and a tiny fixture without
+`Game::hud`/`window_event`, so they stop with `E_TARGET_NOT_FOUND` on this
+bundle. That is a limitation of those fixtures, not a staging failure; the
+plan/apply/check run above replaced them for this mod.
 
 No game was launched and no Minecraft resources or player data were read or
-changed. Interactive logging/gameplay remains a manual check with the compatible
-prepared resources. The source audit verifies only the declared HEAD statement
-and support module differ from pristine Rust ASTs; it does not claim compatibility
-with other Horizon revisions or arbitrary third-party mods.
+changed. Compilation does not establish that the panel looks or behaves as
+intended in game; that remains a manual check with the compatible prepared
+resources. The HUD drawing uses only the public `HudBatch`/`HudAtlas` data and
+the crate-private `ui_theme::Ui` widgets; icon bitmaps are uploaded into the
+unused bottom strip of the `horizon/ui-text` atlas region the first time the
+atlas pointer changes.
 
-CI reproduces the formatting, clippy, standalone runtime and tiny-fixture tests.
-The full native checks additionally need a Horizon Git history containing the
-pin and its cached dependencies; use the commands in README.md to reproduce them.
+CI reproduces formatting, clippy and the standalone runtime tests. The full
+native checks additionally need a Horizon Git history containing the pin and its
+cached dependencies; use the commands in README.md to reproduce them.

@@ -7,7 +7,10 @@ fn gui_render(mut batch: HudBatch, game: &mut crate::game::Game<'_>) -> HudBatch
     }
     let mut state = panel::GUI.lock().unwrap_or_else(|e| e.into_inner());
     let state = &mut *state;
+    let visible = state.visible();
+    let bound = state.bound();
     let mut view = prism_ui::View {
+        side: state.side,
         category: state.category,
         enabled: state.enabled,
         animation: state.animation,
@@ -15,9 +18,16 @@ fn gui_render(mut batch: HudBatch, game: &mut crate::game::Game<'_>) -> HudBatch
         values: state.values,
         selected: state.selected,
         waiting_bind: state.waiting_bind,
+        query: &state.query,
+        search_focus: state.search_focus,
+        visible: &visible,
+        bound: &bound,
         categories: &panel::CATEGORIES,
         modules: &panel::MODULES,
         manager: &panel::MANAGER,
+        configs: &state.configs,
+        config_selected: state.config_selected,
+        status: &state.status,
     };
     prism_ui::render(&game.gui.atlas, &mut batch, game.cursor, &mut view);
     state.animation = view.animation;
