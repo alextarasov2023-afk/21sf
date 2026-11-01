@@ -57,3 +57,29 @@ bindings = [
   { name = "event", ty = "&WindowEvent", value = "&event" },
   { name = "id", ty = "WindowId", value = "id" },
 ]
+
+# The module engine: `native_tick` is Horizon's stable per-tick hook point for
+# native mods, called on the window thread just before that tick's movement
+# simulation, so mutating player keys/motion here lands in the same tick. The
+# hook's `impl` block lives in `game/native_hooks.rs`, hence that module path.
+[[injection]]
+id = "mod-tick"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_tick"
+helper = "mods_tick.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+]
+
+# The HUD module's overlay, drawn through Horizon's native HUD hook (2D extras
+# only; it does not reach the 3D world renderer).
+[[injection]]
+id = "mod-hud"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_hud"
+helper = "mods_hud.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "batch", ty = "&mut HudBatch", value = "&mut *batch" },
+  { name = "corners", ty = "&mut Corners", value = "&mut *corners" },
+]

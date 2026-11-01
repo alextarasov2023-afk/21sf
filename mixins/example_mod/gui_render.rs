@@ -9,9 +9,18 @@ fn gui_render(mut batch: HudBatch, game: &mut crate::game::Game<'_>) -> HudBatch
     let state = &mut *state;
     let visible = state.visible();
     let bound = state.bound();
+    let supported = visible
+        .iter()
+        .map(|(category, module)| panel::is_supported(panel::MODULES[*category][*module]))
+        .collect::<Vec<_>>();
+    let page_count = state.page_count();
+    let total = state.matching().len();
     let mut view = prism_ui::View {
         side: state.side,
         category: state.category,
+        page: state.page,
+        page_count,
+        total,
         enabled: state.enabled,
         animation: state.animation,
         binds: &state.binds,
@@ -23,6 +32,7 @@ fn gui_render(mut batch: HudBatch, game: &mut crate::game::Game<'_>) -> HudBatch
         query: &state.query,
         search_focus: state.search_focus,
         visible: &visible,
+        supported: &supported,
         bound: &bound,
         categories: &panel::CATEGORIES,
         modules: &panel::MODULES,

@@ -32,6 +32,11 @@ pub const CONTENT_X: f32 = 208.0;
 pub const CONTENT_W: f32 = 672.0;
 pub const COLUMNS: usize = 3;
 pub const ROWS: usize = 2;
+/// Modules per category. Mirrors `example_mod::PER_CAT` in the game module;
+/// the panel shows [`PER_PAGE`] of them at a time.
+pub const PER_CAT: usize = 20;
+/// Chips on the page at once, i.e. the whole 3x2 grid.
+pub const PER_PAGE: usize = COLUMNS * ROWS;
 pub const COLUMN_W: f32 = 216.0;
 pub const COLUMN_STEP: f32 = 224.0;
 pub const ROW_H: f32 = 54.0;
@@ -147,6 +152,46 @@ pub fn grid_rect(side: usize) -> Rect {
         y: first.y,
         w: COLUMN_W + COLUMN_STEP * (COLUMNS - 1) as f32,
         h: ROW_H + ROW_STEP * (ROWS - 1) as f32,
+    }
+}
+
+/// Height of the footer page-stepper buttons.
+pub const PAGE_STEP_W: f32 = 28.0;
+/// Width reserved for the `PAGE 1 / 4` plate.
+pub const PAGE_LABEL_W: f32 = 104.0;
+/// Offset of the footer inside the panel, below the deepest drop-down.
+pub const FOOT_Y: f32 = PANEL_H - 46.0;
+
+fn content_right(side: usize) -> f32 {
+    main_rect(side).x + CONTENT_X + CONTENT_W
+}
+
+pub fn page_next(side: usize) -> Rect {
+    Rect {
+        x: content_right(side) - PAGE_STEP_W,
+        y: main_rect(side).y + FOOT_Y,
+        w: PAGE_STEP_W,
+        h: PAGE_STEP_W,
+    }
+}
+
+pub fn page_label(side: usize) -> Rect {
+    let next = page_next(side);
+    Rect {
+        x: next.x - 10.0 - PAGE_LABEL_W,
+        y: next.y,
+        w: PAGE_LABEL_W,
+        h: PAGE_STEP_W,
+    }
+}
+
+pub fn page_prev(side: usize) -> Rect {
+    let label = page_label(side);
+    Rect {
+        x: label.x - 10.0 - PAGE_STEP_W,
+        y: label.y,
+        w: PAGE_STEP_W,
+        h: PAGE_STEP_W,
     }
 }
 
@@ -359,11 +404,17 @@ pub fn to_design(
 pub struct View<'a> {
     pub side: usize,
     pub category: usize,
-    pub enabled: [[bool; 6]; 5],
-    pub animation: [[f32; 6]; 5],
-    pub binds: &'a [[Option<String>; 6]; 5],
-    pub values: [[u8; 6]; 5],
-    pub modes: &'a [[u8; 6]; 5],
+    /// Zero-based page shown in the grid.
+    pub page: usize,
+    /// Pages available after the current search/filter.
+    pub page_count: usize,
+    /// Modules the current search/filter matched, across all pages.
+    pub total: usize,
+    pub enabled: [[bool; PER_CAT]; 5],
+    pub animation: [[f32; PER_CAT]; 5],
+    pub binds: &'a [[Option<String>; PER_CAT]; 5],
+    pub values: [[u8; PER_CAT]; 5],
+    pub modes: &'a [[u8; PER_CAT]; 5],
     pub selected: Option<(usize, usize)>,
     pub waiting_bind: bool,
     pub mode_open: bool,
@@ -371,10 +422,13 @@ pub struct View<'a> {
     pub search_focus: bool,
     /// The modules currently shown in the 3x2 grid, in reading order.
     pub visible: &'a [(usize, usize)],
+    /// Whether each visible slot is driven by real game code, index-aligned
+    /// with [`View::visible`]. A chip without a hook is marked, not faked.
+    pub supported: &'a [bool],
     /// Bound modules as (category, module, key), in grid order.
     pub bound: &'a [(usize, usize, String)],
     pub categories: &'a [&'a str],
-    pub modules: &'a [[&'a str; 6]; 5],
+    pub modules: &'a [[&'a str; PER_CAT]; 5],
     pub manager: &'a [&'a str; 3],
     pub mode_names: &'a [&'a str; 4],
     pub themes: &'a [&'a str; 5],
@@ -399,7 +453,7 @@ pub fn render(atlas: &HudAtlas, batch: &mut HudBatch, cursor: (f32, f32), view: 
     let side_target = if view.side == SIDE_NONE { 0.0 } else { 1.0 };
     *view.side_anim += (side_target - *view.side_anim) * 0.28;
     for category in 0..5 {
-        for module in 0..6 {
+        for module in 0..PER_CAT {
             let target = f32::from(view.enabled[category][module]);
             let anim = &mut view.animation[category][module];
             *anim += (target - *anim) * 0.22;
@@ -730,6 +784,23 @@ impl Paint<'_, '_> {
         self.line(cx, cy + 2.0, cx + 4.0, cy - 2.0, 1.5, color);
     }
 
+    /// A `>` arrow head; `left` mirrors it into `<`. Used by the page stepper,
+    /// since the glyph atlas has no triangle characters.
+    fn arrow(&mut self, cx: f32, cy: f32, color: u32, left: bool) {
+        let k = if left { -1.0 } else { 1.0 };
+        self.line(cx - 2.0 * k, cy - 4.0, cx + 2.0 * k, cy, 1.6, color);
+        self.line(cx + 2.0 * k, cy, cx - 2.0 * k, cy + 4.0, 1.6, color);
+    }
+
+    /// A status pip. Hollow ones are punched out with the colour they sit on,
+    /// so the legend and the chips read the same way.
+    fn dot(&mut self, cx: f32, cy: f32, radius: f32, color: u32, filled: bool, bg: u32) {
+        self.disc(cx, cy, radius, color);
+        if !filled {
+            self.disc(cx, cy, radius - 1.5, bg);
+        }
+    }
+
     fn keyboard(&mut self, cx: f32, cy: f32, scale: f32, color: u32) {
         let (hw, hh) = (8.0 * scale, 5.0 * scale);
         self.border(cx - hw, cy - hh, hw * 2.0, hh * 2.0, 2.4 * scale, color);
@@ -934,7 +1005,7 @@ impl Paint<'_, '_> {
                 theme.accent,
                 "Results",
             );
-            let count = format!("{} MATCHES", view.visible.len());
+            let count = format!("{} MATCHES", view.total);
             self.text_right(
                 Face::Regular,
                 8.0,
@@ -966,7 +1037,7 @@ impl Paint<'_, '_> {
                 "TRY ANOTHER SEARCH",
             );
         } else {
-            for (slot, (category, module)) in view.visible.iter().take(COLUMNS * ROWS).enumerate() {
+            for (slot, (category, module)) in view.visible.iter().enumerate() {
                 let column = slot % COLUMNS;
                 let row = slot / COLUMNS;
                 self.draw_module_chip(view, side, column, row, *category, *module);
@@ -983,6 +1054,63 @@ impl Paint<'_, '_> {
                 }
             }
         }
+        self.draw_footer(view, side);
+    }
+
+    /// Page stepper on the right and the legend the chips are marked with.
+    /// Both sit below the deepest drop-down, so they never overlap a chip.
+    fn draw_footer(&mut self, view: &View<'_>, side: usize) {
+        let theme = self.theme;
+        let cy = main_rect(side).y + FOOT_Y + PAGE_STEP_W / 2.0;
+        let left = main_rect(side).x + CONTENT_X;
+        self.dot(left + 5.0, cy, 3.4, theme.accent, true, theme.page);
+        self.text_mid(Face::Regular, 8.0, left + 15.0, cy, theme.muted, "WORKING");
+        self.dot(left + 104.0, cy, 3.4, theme.faint, false, theme.page);
+        self.text_mid(
+            Face::Regular,
+            8.0,
+            left + 114.0,
+            cy,
+            theme.muted,
+            "NOT WIRED",
+        );
+
+        let pages = view.page_count.max(1);
+        let prev = page_prev(side);
+        let next = page_next(side);
+        let label = page_label(side);
+        let can_prev = view.page > 0;
+        let can_next = view.page + 1 < pages;
+        self.page_button(prev, theme, can_prev, self.has(prev) && can_prev, true);
+        self.page_button(next, theme, can_next, self.has(next) && can_next, false);
+        let text = format!("PAGE {} / {}", view.page + 1, pages);
+        self.text_centered(
+            Face::Medium,
+            9.0,
+            label.x + label.w / 2.0,
+            cy,
+            theme.muted,
+            &text,
+        );
+    }
+
+    fn page_button(&mut self, rect: Rect, theme: Theme, live: bool, hot: bool, left: bool) {
+        self.rounded(
+            rect.x,
+            rect.y,
+            rect.w,
+            rect.h,
+            8.0,
+            if hot { theme.hover } else { theme.field },
+        );
+        self.border(rect.x, rect.y, rect.w, rect.h, 8.0, theme.border);
+        let color = if live {
+            if hot { theme.accent_light } else { theme.icon }
+        } else {
+            theme.faint
+        };
+        let (cx, cy) = rect.center();
+        self.arrow(cx, cy, color, left);
     }
 
     fn draw_module_chip(
@@ -998,20 +1126,14 @@ impl Paint<'_, '_> {
         let rect = module_row(side, column, row);
         let selected = view.selected == Some((category, module));
         let hovered = self.has(rect);
-        self.rounded(
-            rect.x,
-            rect.y,
-            rect.w,
-            rect.h,
-            11.0,
-            if selected {
-                theme.selected_bg
-            } else if hovered {
-                theme.raised
-            } else {
-                theme.field
-            },
-        );
+        let fill = if selected {
+            theme.selected_bg
+        } else if hovered {
+            theme.raised
+        } else {
+            theme.field
+        };
+        self.rounded(rect.x, rect.y, rect.w, rect.h, 11.0, fill);
         self.border(
             rect.x,
             rect.y,
@@ -1041,6 +1163,19 @@ impl Paint<'_, '_> {
             if enabled { theme.strong } else { theme.ink },
             view.modules[category][module],
         );
+        let wired = view
+            .supported
+            .get(row * COLUMNS + column)
+            .copied()
+            .unwrap_or(false);
+        self.dot(
+            rect.x + rect.w - 9.0,
+            rect.y + 9.0,
+            2.8,
+            if wired { theme.accent } else { theme.faint },
+            wired,
+            fill,
+        );
         self.toggle(
             toggle_row(side, column, row),
             view.animation[category][module],
@@ -1061,6 +1196,19 @@ impl Paint<'_, '_> {
         self.rounded(drop.x, drop.y, drop.w, drop.h, 12.0, theme.window);
         self.border(drop.x, drop.y, drop.w, drop.h, 12.0, theme.border);
 
+        let wired = view
+            .supported
+            .get(row * COLUMNS + column)
+            .copied()
+            .unwrap_or(false);
+        self.text_mid(
+            Face::Medium,
+            8.5,
+            drop.x + 12.0,
+            drop.y + 19.0,
+            if wired { theme.accent } else { theme.faint },
+            if wired { "WORKING" } else { "NOT WIRED" },
+        );
         self.toggle(
             dropdown_toggle(side, column, row),
             view.animation[category][module],
@@ -1350,6 +1498,19 @@ impl Paint<'_, '_> {
                     cy,
                     theme.accent,
                     &label,
+                );
+            }
+            // Eight rows is what the page and its CLEAR button leave room for;
+            // a 100-module catalog can outgrow that, so say how many are hidden.
+            let extra = view.bound.len().saturating_sub(8);
+            if extra > 0 {
+                self.text_centered(
+                    Face::Regular,
+                    8.0,
+                    frame.x + frame.w / 2.0,
+                    frame.y + 442.0,
+                    theme.faint,
+                    &format!("+{extra} MORE BINDS"),
                 );
             }
         }
@@ -1772,6 +1933,33 @@ mod tests {
         let track = dropdown_slider_track(SIDE_NONE, 0, 0);
         assert!(hit.contains(track.x + track.w / 2.0, track.y + track.h / 2.0));
         assert!(hit.x <= track.x && hit.x + hit.w >= track.x + track.w);
+    }
+
+    #[test]
+    fn a_page_fills_the_grid_exactly() {
+        assert_eq!(PER_PAGE, COLUMNS * ROWS);
+        assert!(PER_CAT > PER_PAGE, "pagination needs more than one page");
+    }
+
+    #[test]
+    fn the_page_stepper_clears_the_grid_and_the_panel_edge() {
+        let main = main_rect(SIDE_NONE);
+        let prev = page_prev(SIDE_NONE);
+        let label = page_label(SIDE_NONE);
+        let next = page_next(SIDE_NONE);
+        for rect in [prev, label, next] {
+            assert!(rect.x >= main.x + CONTENT_X, "{rect:?}");
+            assert!(
+                rect.y >= main.y && rect.y + rect.h <= main.y + main.h,
+                "{rect:?}"
+            );
+            assert!(!grid_rect(SIDE_NONE).contains(rect.x, rect.y), "{rect:?}");
+        }
+        assert!(prev.x < label.x && label.x < next.x);
+        assert_eq!(prev.y, next.y);
+        // The stepper lives under the deepest drop-down, never under a chip.
+        let deepest = dropdown_rect(SIDE_NONE, 0, ROWS - 1);
+        assert!(prev.y >= deepest.y + deepest.h);
     }
 
     #[test]

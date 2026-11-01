@@ -4,44 +4,152 @@
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub const CATEGORIES: [&str; 5] = ["Combat", "Movement", "Visuals", "Player", "Misc"];
-pub const MODULES: [[&str; 6]; 5] = [
+
+/// Modules shown per category page. The panel's grid is three columns by two
+/// rows, so a page is exactly six chips; categories hold up to `PER_CAT` and
+/// paginate.
+pub const PER_PAGE: usize = 6;
+pub const PER_CAT: usize = 20;
+
+pub const MODULES: [[&str; PER_CAT]; 5] = [
     [
         "Attack Aura",
-        "No Velocity",
         "Trigger Bot",
         "Aim Assist",
-        "Auto Explosion",
-        "Auto Swap",
+        "Reach",
+        "Criticals",
+        "Auto Clicker",
+        "Anti Knockback",
+        "Fast Hit",
+        "Full Sweep",
+        "Super Knockback",
+        "Auto Weapon",
+        "Hitbox Expand",
+        "Backtrack",
+        "Auto Block",
+        "Shield Bash",
+        "Explosion Aura",
+        "Void Aura",
+        "Trigger Use",
+        "Aim Lock",
+        "Kill Recall",
     ],
-    ["Speed", "Fly", "Sprint", "Step", "No Slow", "Air Jump"],
     [
+        "Sprint",
+        "Speed",
+        "Fly",
+        "Step",
+        "No Slow",
+        "Air Jump",
+        "Spider",
+        "Jesus",
+        "Elytra Boost",
+        "Auto Jump",
+        "Sprint Reset",
+        "No Jump Delay",
+        "Safe Walk",
+        "Strafe",
+        "Landing",
+        "Phase",
+        "Velocity",
+        "Sneak Speed",
+        "Bhop",
+        "Keep Yaw",
+    ],
+    [
+        "Coordinates",
+        "FPS",
+        "Direction",
+        "Clock",
+        "CPS",
+        "Keystrokes",
         "ESP",
         "Chams",
         "Full Bright",
         "Tracers",
+        "Xray",
         "Name Tags",
         "View Model",
+        "Freecam",
+        "Item ESP",
+        "Chunk Borders",
+        "Storage ESP",
+        "Motion Blur",
+        "Boss Bar",
+        "Scoreboard",
     ],
     [
         "Auto Totem",
         "Auto Eat",
-        "Inventory Sort",
+        "Auto Fish",
         "Fast Use",
         "No Fall",
         "Auto Tool",
+        "Auto Armor",
+        "Auto Shear",
+        "Inventory Sort",
+        "Middle Click",
+        "Fast Break",
+        "Auto Sign",
+        "Chest Stealer",
+        "Auto Walk",
+        "Auto Mine",
+        "Auto Farm",
+        "Auto Build",
+        "No Swing",
+        "Auto Ride",
+        "Fast Place",
     ],
     [
-        "Sprint Reset",
-        "Tape Mouse",
-        "Backtrack",
-        "Web Trap",
+        "Session Stats",
+        "Disconnect",
         "Anti Bot",
         "No Friend Damage",
+        "Web Trap",
+        "Chat Toggle",
+        "Auto Reconnect",
+        "Name Stealer",
+        "Teams",
+        "Pop Rock",
+        "Timer",
+        "FPS Limiter",
+        "Auto Message",
+        "Server Ping",
+        "Player List",
+        "Portals",
+        "Crash Stopper",
+        "Auto Accept",
+        "No Sound Lag",
+        "Toggle Sprint",
     ],
 ];
+
+/// The modules the pinned Horizon native-mod hook API can actually back. Every
+/// other name is present so the panel reads like a full client, but toggling it
+/// does nothing: Horizon's stable hooks expose input keys, mutable player
+/// motion, melee attack and the 2D HUD only — not the 3D world renderer, and
+/// Speed/Fly/No Fall are reset or server-gated inside the movement sim. The
+/// chip draws a filled dot when supported and a hollow dot when not.
+pub fn is_supported(name: &str) -> bool {
+    matches!(
+        name,
+        "Attack Aura"
+            | "Trigger Bot"
+            | "Aim Assist"
+            | "Sprint"
+            | "Coordinates"
+            | "FPS"
+            | "Direction"
+            | "Clock"
+            | "CPS"
+            | "Keystrokes"
+            | "Session Stats"
+    )
+}
 
 pub const MANAGER: [&str; 3] = ["Binds", "Config", "Themes"];
 pub const MODES: [&str; 4] = ["Normal", "Smooth", "Instant", "Legacy"];
@@ -58,11 +166,13 @@ pub const CONFIG_DIR: &str = "config/prism";
 
 pub struct GuiState {
     pub category: usize,
-    pub enabled: [[bool; 6]; 5],
-    pub animation: [[f32; 6]; 5],
-    pub binds: [[Option<String>; 6]; 5],
-    pub values: [[u8; 6]; 5],
-    pub modes: [[u8; 6]; 5],
+    /// Zero-based index of the current page within the visible module list.
+    pub page: usize,
+    pub enabled: [[bool; PER_CAT]; 5],
+    pub animation: [[f32; PER_CAT]; 5],
+    pub binds: [[Option<String>; PER_CAT]; 5],
+    pub values: [[u8; PER_CAT]; 5],
+    pub modes: [[u8; PER_CAT]; 5],
     pub theme: u8,
     pub selected: Option<(usize, usize)>,
     pub waiting_bind: bool,
@@ -86,11 +196,12 @@ impl Default for GuiState {
     fn default() -> Self {
         Self {
             category: 0,
-            enabled: [[false; 6]; 5],
-            animation: [[0.0; 6]; 5],
-            binds: [const { [const { None }; 6] }; 5],
-            values: [[50; 6]; 5],
-            modes: [[0; 6]; 5],
+            page: 0,
+            enabled: [[false; PER_CAT]; 5],
+            animation: [[0.0; PER_CAT]; 5],
+            binds: [const { [const { None }; PER_CAT] }; 5],
+            values: [[50; PER_CAT]; 5],
+            modes: [[0; PER_CAT]; 5],
             theme: 0,
             selected: None,
             waiting_bind: false,
@@ -111,11 +222,12 @@ impl Default for GuiState {
 
 pub static GUI: Mutex<GuiState> = Mutex::new(GuiState {
     category: 0,
-    enabled: [[false; 6]; 5],
-    animation: [[0.0; 6]; 5],
-    binds: [const { [const { None }; 6] }; 5],
-    values: [[50; 6]; 5],
-    modes: [[0; 6]; 5],
+    page: 0,
+    enabled: [[false; PER_CAT]; 5],
+    animation: [[0.0; PER_CAT]; 5],
+    binds: [const { [const { None }; PER_CAT] }; 5],
+    values: [[50; PER_CAT]; 5],
+    modes: [[0; PER_CAT]; 5],
     theme: 0,
     selected: None,
     waiting_bind: false,
@@ -136,7 +248,7 @@ impl GuiState {
     pub fn activate_bind(&mut self, key: &str) -> usize {
         let mut count = 0;
         for category in 0..5 {
-            for module in 0..6 {
+            for module in 0..PER_CAT {
                 if self.binds[category][module].as_deref() == Some(key) {
                     self.enabled[category][module] = !self.enabled[category][module];
                     count += 1;
@@ -146,12 +258,12 @@ impl GuiState {
         count
     }
 
-    /// The modules shown in the grid: the current category, or every match
-    /// for the current search query in category order.
-    pub fn visible(&self) -> Vec<(usize, usize)> {
+    /// Every module matching the current search query in category order; an
+    /// empty query is the whole current category.
+    pub fn matching(&self) -> Vec<(usize, usize)> {
         let query = self.query.trim().to_lowercase();
         if query.is_empty() {
-            return (0..6).map(|module| (self.category, module)).collect();
+            return (0..PER_CAT).map(|module| (self.category, module)).collect();
         }
         let mut matches = Vec::new();
         for (category, modules) in MODULES.iter().enumerate() {
@@ -164,11 +276,50 @@ impl GuiState {
         matches
     }
 
-    /// Bound modules as (category, module, key), in grid order.
+    /// The modules on the current page (at most `PER_PAGE`), sliced from
+    /// `matching()`. The grid draws them as a three-column by two-row layout.
+    pub fn visible(&self) -> Vec<(usize, usize)> {
+        let start = self.page * PER_PAGE;
+        self.matching()
+            .into_iter()
+            .skip(start)
+            .take(PER_PAGE)
+            .collect()
+    }
+
+    /// How many pages the current view needs (at least one).
+    pub fn page_count(&self) -> usize {
+        let total = if self.query.trim().is_empty() {
+            PER_CAT
+        } else {
+            self.matching().len()
+        };
+        total.div_ceil(PER_PAGE).max(1)
+    }
+
+    /// Move the page by `delta`, clamped to the view; drop the open dropdown so
+    /// its slot-to-grid mapping stays valid.
+    pub fn step_page(&mut self, delta: isize) {
+        let count = self.page_count() as isize;
+        let next = (self.page as isize + delta).clamp(0, count - 1);
+        if next != self.page as isize {
+            self.page = next as usize;
+            self.selected = None;
+            self.mode_open = false;
+        }
+    }
+
+    /// Switch category and restart at the first page.
+    pub fn goto_category(&mut self, category: usize) {
+        self.category = category;
+        self.page = 0;
+    }
+
+    /// Bound modules as (category, module, key), in catalog order.
     pub fn bound(&self) -> Vec<(usize, usize, String)> {
         let mut rows = Vec::new();
         for category in 0..5 {
-            for module in 0..6 {
+            for module in 0..PER_CAT {
                 if let Some(key) = &self.binds[category][module] {
                     rows.push((category, module, key.clone()));
                 }
@@ -178,6 +329,15 @@ impl GuiState {
     }
 
     pub fn open_module(&mut self, category: usize, module: usize) {
+        // A module opened from the binds page can sit on a later catalog page,
+        // so jump to the page that actually holds it.
+        if let Some(index) = self
+            .matching()
+            .iter()
+            .position(|&(c, m)| c == category && m == module)
+        {
+            self.page = index / PER_PAGE;
+        }
         self.selected = Some((category, module));
         self.waiting_bind = false;
         self.mode_open = false;
@@ -197,6 +357,7 @@ impl GuiState {
         self.selected = None;
         self.search_focus = false;
         self.query.clear();
+        self.page = 0;
         self.open = 0.0;
     }
 
@@ -205,21 +366,21 @@ impl GuiState {
         out.push_str(&format!("category={}\n", self.category));
         out.push_str(&format!("theme={}\n", self.theme));
         for category in 0..5 {
-            for module in 0..6 {
+            for module in 0..PER_CAT {
                 if self.enabled[category][module] {
                     out.push_str(&format!("enabled={category},{module}\n"));
                 }
             }
         }
         for category in 0..5 {
-            for module in 0..6 {
+            for module in 0..PER_CAT {
                 if let Some(key) = &self.binds[category][module] {
                     out.push_str(&format!("bind={category},{module},{key}\n"));
                 }
             }
         }
         for category in 0..5 {
-            for module in 0..6 {
+            for module in 0..PER_CAT {
                 out.push_str(&format!(
                     "value={category},{module},{}\n",
                     self.values[category][module]
@@ -227,7 +388,7 @@ impl GuiState {
             }
         }
         for category in 0..5 {
-            for module in 0..6 {
+            for module in 0..PER_CAT {
                 if self.modes[category][module] != 0 {
                     out.push_str(&format!(
                         "mode={category},{module},{}\n",
@@ -240,10 +401,11 @@ impl GuiState {
     }
 
     pub fn apply(&mut self, text: &str) {
-        self.enabled = [[false; 6]; 5];
-        self.binds = [const { [const { None }; 6] }; 5];
-        self.values = [[50; 6]; 5];
-        self.modes = [[0; 6]; 5];
+        self.enabled = [[false; PER_CAT]; 5];
+        self.binds = [const { [const { None }; PER_CAT] }; 5];
+        self.values = [[50; PER_CAT]; 5];
+        self.modes = [[0; PER_CAT]; 5];
+        self.page = 0;
         for line in text.lines() {
             let line = line.trim();
             if line.is_empty() || line.starts_with('#') {
@@ -287,7 +449,7 @@ impl GuiState {
                         continue;
                     };
                     let key = key.trim();
-                    if category < 5 && module < 6 && !key.is_empty() {
+                    if category < 5 && module < PER_CAT && !key.is_empty() {
                         self.binds[category][module] = Some(key.to_string());
                     }
                 }
@@ -305,7 +467,7 @@ impl GuiState {
                         continue;
                     };
                     if category < 5
-                        && module < 6
+                        && module < PER_CAT
                         && let Ok(value) = value.trim().parse::<u8>()
                     {
                         self.values[category][module] = value.min(100);
@@ -325,7 +487,7 @@ impl GuiState {
                         continue;
                     };
                     if category < 5
-                        && module < 6
+                        && module < PER_CAT
                         && let Ok(mode) = mode.trim().parse::<usize>()
                         && mode < MODES.len()
                     {
@@ -467,7 +629,7 @@ fn parse_slot(text: &str) -> Option<(usize, usize)> {
     let (category, module) = text.split_once(',')?;
     let category = category.trim().parse::<usize>().ok()?;
     let module = module.trim().parse::<usize>().ok()?;
-    (category < 5 && module < 6).then_some((category, module))
+    (category < 5 && module < PER_CAT).then_some((category, module))
 }
 
 /// Only plain file names reach the disk: `save_to("../x")` stays inside.
@@ -534,6 +696,122 @@ pub fn before_break(pos: [i32; 3]) {
     eprintln!("{}", block_break_message(pos));
 }
 
+/// Every module the panel has switched on, as `(canonical name, slider value,
+/// mode index)` in grid order. The tick and HUD hooks read this each frame, so
+/// the toggle in the click GUI is exactly what turns a behaviour on.
+pub fn enabled_behaviors() -> Vec<(&'static str, u8, u8)> {
+    let gui = GUI.lock().unwrap_or_else(|e| e.into_inner());
+    let mut out = Vec::new();
+    for (category, (names, enabled)) in MODULES.iter().zip(&gui.enabled).enumerate() {
+        for (module, (name, enabled)) in names.iter().zip(enabled).enumerate() {
+            if *enabled {
+                out.push((
+                    *name,
+                    gui.values[category][module],
+                    gui.modes[category][module],
+                ));
+            }
+        }
+    }
+    out
+}
+
+/// The Attack Aura reach for a slider value: `3.0` blocks at 0 up to `8.0` at
+/// 100.
+pub fn aura_range(value: u8) -> f64 {
+    3.0 + f64::from(value.min(100)) / 100.0 * 5.0
+}
+
+/// The cardinal direction a `yaw` faces. Horizon's yaw is `0 = south,
+/// 90 = west`, so the four 90° sectors start at south and turn westward.
+pub fn facing_label(yaw: f32) -> &'static str {
+    let angle = ((yaw % 360.0) + 360.0) % 360.0;
+    match angle {
+        315.0..=360.0 | 0.0..=45.0 => "South",
+        45.0..=135.0 => "West",
+        135.0..=225.0 => "North",
+        _ => "East",
+    }
+}
+
+/// Milliseconds since the Unix epoch, clamped at 0 for a pre-epoch clock.
+fn epoch_ms() -> i64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|elapsed| elapsed.as_millis() as i64)
+        .unwrap_or_default()
+}
+
+/// The wall clock as `HH:MM:SS UTC`. The mod API exposes no timezone, so the
+/// readout names its own basis instead of pretending to be local time.
+pub fn utc_clock() -> String {
+    let day = (epoch_ms() / 1000).max(0) % 86_400;
+    format!("{:02}:{:02}:{:02} UTC", day / 3600, day / 60 % 60, day % 60)
+}
+
+static SESSION_START_MS: AtomicI64 = AtomicI64::new(0);
+
+/// Call once a tick with whether a world is live: a session starts the tick a
+/// world appears and clears when it goes, so the readout counts this world.
+pub fn note_session(live: bool) {
+    match (live, SESSION_START_MS.load(Ordering::Relaxed)) {
+        (true, 0) => SESSION_START_MS.store(epoch_ms(), Ordering::Relaxed),
+        (false, _) => SESSION_START_MS.store(0, Ordering::Relaxed),
+        _ => {}
+    }
+}
+
+/// Seconds since the current world session began.
+pub fn session_seconds() -> u64 {
+    let start = SESSION_START_MS.load(Ordering::Relaxed);
+    if start == 0 {
+        0
+    } else {
+        (epoch_ms() - start).max(0) as u64 / 1000
+    }
+}
+
+/// The shortest signed turn from `from` to `to` in degrees, always in -180..180.
+pub fn turn_delta(from: f32, to: f32) -> f32 {
+    let raw = (to - from) % 360.0;
+    match raw {
+        v if v > 180.0 => v - 360.0,
+        v if v < -180.0 => v + 360.0,
+        v => v,
+    }
+}
+
+/// Any angle folded into -180..180, the range Horizon keeps a player's yaw in.
+pub fn wrap_degrees(angle: f32) -> f32 {
+    let mut folded = angle % 360.0;
+    if folded >= 180.0 {
+        folded -= 360.0;
+    } else if folded < -180.0 {
+        folded += 360.0;
+    }
+    folded
+}
+
+/// `Entity.lookAt`'s (yaw, pitch) from `from` towards `to`, in degrees. Horizon
+/// stores the player's look the same way, so the aim assist can write it back.
+pub fn look_rotation(from: [f64; 3], to: [f64; 3]) -> (f32, f32) {
+    let (dx, dy, dz) = (to[0] - from[0], to[1] - from[1], to[2] - from[2]);
+    let horizontal = (dx * dx + dz * dz).sqrt();
+    let yaw = wrap_degrees(dz.atan2(dx).to_degrees() as f32 - 90.0);
+    (yaw, -(dy.atan2(horizontal).to_degrees()) as f32)
+}
+
+/// The share of the gap Aim Assist closes per tick. The slider is the strength;
+/// `Smooth` eases it and `Instant` snaps straight onto the target.
+pub fn aim_strength(value: u8, mode: u8) -> f32 {
+    let base = (f32::from(value.min(100)) / 100.0).clamp(0.05, 1.0);
+    match mode {
+        1 => base * 0.35,
+        2 => 1.0,
+        _ => base,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -566,17 +844,44 @@ mod tests {
         assert!(state.visible().iter().all(|(category, _)| *category == 0));
 
         state.query = "fly".into();
-        assert_eq!(state.visible(), vec![(1, 1)]);
+        assert_eq!(state.matching(), vec![(1, 2)]);
 
         state.query = "auto".into();
-        let matches = state.visible();
-        assert!(matches.contains(&(0, 4)) && matches.contains(&(3, 0)));
-        assert!(matches.iter().all(|(category, module)| {
-            MODULES[*category][*module].to_lowercase().contains("auto")
-        }));
+        let matches = state.matching();
+        assert!(!matches.is_empty());
+        assert!(
+            matches
+                .iter()
+                .all(|(category, module)| MODULES[*category][*module]
+                    .to_lowercase()
+                    .contains("auto"))
+        );
 
         state.query = "zzz".into();
         assert!(state.visible().is_empty());
+    }
+
+    #[test]
+    fn the_view_paginates_a_category_six_at_a_time() {
+        let mut state = GuiState::default();
+        // Twenty modules per category, six per page: four pages.
+        assert_eq!(state.page_count(), PER_CAT.div_ceil(PER_PAGE));
+        assert_eq!(state.visible().len(), PER_PAGE);
+        assert_eq!(state.visible().first(), Some(&(0, 0)));
+
+        state.step_page(1);
+        assert_eq!(state.page, 1);
+        assert_eq!(state.visible().first(), Some(&(0, PER_PAGE)));
+
+        // Stepping past the last page clamps to it; the final page is short.
+        state.step_page(100);
+        assert_eq!(state.page, state.page_count() - 1);
+        assert_eq!(state.visible().len(), PER_CAT % PER_PAGE);
+
+        // Category switches and UI resets return to the first page.
+        state.goto_category(3);
+        assert_eq!(state.page, 0);
+        assert_eq!(state.visible().first(), Some(&(3, 0)));
     }
 
     #[test]
@@ -641,5 +946,83 @@ mod tests {
         assert_eq!(sanitize_name("../../etc/passwd"), "etcpasswd");
         assert_eq!(sanitize_name(""), "config");
         assert_eq!(sanitize_name("my config!"), "myconfig");
+    }
+
+    #[test]
+    fn aura_range_maps_the_slider_to_three_through_eight_blocks() {
+        assert_eq!(aura_range(0), 3.0);
+        assert_eq!(aura_range(50), 5.5);
+        assert_eq!(aura_range(100), 8.0);
+        // Values above the slider's range are clamped, not extrapolated.
+        assert_eq!(aura_range(200), 8.0);
+    }
+
+    #[test]
+    fn facing_label_wraps_negative_and_large_yaw() {
+        assert_eq!(facing_label(0.0), "South");
+        assert_eq!(facing_label(90.0), "West");
+        assert_eq!(facing_label(180.0), "North");
+        assert_eq!(facing_label(270.0), "East");
+        assert_eq!(facing_label(-90.0), "East");
+        assert_eq!(facing_label(450.0), "West");
+    }
+
+    #[test]
+    fn look_rotation_matches_horizontals_yaw_and_vertical_pitch() {
+        let (yaw, pitch) = look_rotation([0.0, 0.0, 0.0], [0.0, 0.0, 10.0]);
+        assert_eq!((yaw, pitch), (0.0, 0.0));
+        let (yaw, _) = look_rotation([0.0, 0.0, 0.0], [10.0, 0.0, 0.0]);
+        assert_eq!(yaw, -90.0);
+        let (yaw, _) = look_rotation([0.0, 0.0, 0.0], [-10.0, 0.0, 0.0]);
+        assert_eq!(yaw, 90.0);
+        // North is the yaw seam: -180 and 180 are the same facing.
+        let (yaw, _) = look_rotation([0.0, 0.0, 0.0], [0.0, 0.0, -10.0]);
+        assert_eq!(yaw.abs(), 180.0);
+        let (_, pitch) = look_rotation([0.0, 0.0, 0.0], [0.0, 10.0, 0.0]);
+        assert_eq!(pitch, -90.0);
+        let (_, pitch) = look_rotation([0.0, 0.0, 0.0], [0.0, -10.0, 0.0]);
+        assert_eq!(pitch, 90.0);
+    }
+
+    #[test]
+    fn turn_delta_takes_the_short_way_round() {
+        assert_eq!(turn_delta(0.0, 90.0), 90.0);
+        assert_eq!(turn_delta(170.0, -170.0), 20.0);
+        assert_eq!(turn_delta(-170.0, 170.0), -20.0);
+        assert_eq!(turn_delta(30.0, 30.0), 0.0);
+    }
+
+    #[test]
+    fn wrap_degrees_folds_any_yaw_into_the_games_range() {
+        assert_eq!(wrap_degrees(190.0), -170.0);
+        assert_eq!(wrap_degrees(-190.0), 170.0);
+        assert_eq!(wrap_degrees(360.0), 0.0);
+        assert_eq!(wrap_degrees(725.0), 5.0);
+        assert_eq!(wrap_degrees(-180.0), -180.0);
+    }
+
+    #[test]
+    fn aim_strength_follows_the_slider_and_eases_on_smooth() {
+        assert_eq!(aim_strength(100, 0), 1.0);
+        assert_eq!(aim_strength(50, 0), 0.5);
+        assert_eq!(aim_strength(50, 1), 0.175);
+        assert_eq!(aim_strength(0, 2), 1.0);
+        // Zero is never "no aim": the slider bottoms out at a gentle follow.
+        assert_eq!(aim_strength(0, 0), 0.05);
+    }
+
+    #[test]
+    fn a_cleared_session_reports_zero_seconds() {
+        note_session(true);
+        note_session(false);
+        assert_eq!(session_seconds(), 0);
+    }
+
+    #[test]
+    fn utc_clock_is_a_padded_time_of_day() {
+        let clock = utc_clock();
+        assert_eq!(clock.len(), 12);
+        assert!(clock.ends_with("UTC"));
+        assert_eq!(&clock[2..3], ":");
     }
 }

@@ -72,6 +72,7 @@ fn gui_input(
                 state.selected = None;
                 state.mode_open = false;
                 state.dragging = false;
+                state.page = 0;
                 return core::ops::ControlFlow::Break(());
             }
             if key.physical_key == PhysicalKey::Code(KeyCode::Escape) {
@@ -81,6 +82,7 @@ fn gui_input(
                     state.close_side();
                 } else if !state.query.is_empty() {
                     state.query.clear();
+                    state.page = 0;
                 } else if state.selected.is_some() {
                     state.selected = None;
                 } else {
@@ -161,7 +163,7 @@ fn gui_input(
                     let bound = state.bound();
                     for (index, (category, module, _)) in bound.iter().take(8).enumerate() {
                         if prism_ui::binds_row(side, index).contains(cx, cy) {
-                            state.category = *category;
+                            state.goto_category(*category);
                             state.query.clear();
                             state.open_module(*category, *module);
                             state.close_side();
@@ -253,6 +255,7 @@ fn gui_input(
                 let search = prism_ui::search_rect(side);
                 if prism_ui::search_clear(side).contains(cx, cy) {
                     state.query.clear();
+                    state.page = 0;
                     state.search_focus = true;
                     state.selected = None;
                     state.mode_open = false;
@@ -264,11 +267,21 @@ fn gui_input(
                     handled = true;
                 }
             }
+            // The footer stepper walks the current view six chips at a time.
+            if !handled && side == panel::SIDE_NONE {
+                if prism_ui::page_prev(side).contains(cx, cy) {
+                    state.step_page(-1);
+                    handled = true;
+                } else if prism_ui::page_next(side).contains(cx, cy) {
+                    state.step_page(1);
+                    handled = true;
+                }
+            }
             // Sidebar navigation stays live on every page.
             if !handled {
                 for index in 0..5 {
                     if prism_ui::category_row(side, index).contains(cx, cy) {
-                        state.category = index;
+                        state.goto_category(index);
                         state.query.clear();
                         state.selected = None;
                         state.close_side();
@@ -306,7 +319,9 @@ fn gui_input(
             }
             if !handled && side == panel::SIDE_NONE {
                 let visible = state.visible();
-                for (slot, (category, module)) in visible.iter().take(6).enumerate() {
+                for (slot, (category, module)) in
+                    visible.iter().take(prism_ui::PER_PAGE).enumerate()
+                {
                     let column = slot % prism_ui::COLUMNS;
                     let row = slot / prism_ui::COLUMNS;
                     if !prism_ui::module_row(side, column, row).contains(cx, cy) {

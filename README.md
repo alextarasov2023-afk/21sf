@@ -18,51 +18,90 @@ The panel is centred on a 1280×640 design surface as a 900×520 window: a
 sidebar with only the recoloured logo (no wordmark), the five module categories
 and three manager entries (Binds, Config, Themes) styled as one continuous
 list. The content area holds the search field and a 3×2 grid of short module
-chips. Clicking a chip opens a narrow 216×176 settings drop-down column
-anchored directly beneath that chip — its ENABLED switch, MODE select, KEY BIND
-field and VALUE slider stacked in one tidy column — rather than a wide panel
-half; clicking the chip again, empty panel space, the search field or a
-category closes it. Binds, Config and Themes replace the module content inside
-the same centred window rather than opening a separate side window. The panel
-fades and lifts in when opened, manager content slides gently into place, and
-switches/slider animate between states.
+chips, paged six at a time through the twenty modules each category lists (a
+footer stepper reads `PAGE n / m`). Clicking a chip opens a narrow 216×176
+settings drop-down column anchored directly beneath that chip — its ENABLED
+switch, MODE select, KEY BIND field and VALUE slider stacked in one tidy column
+— rather than a wide panel half; clicking the chip again, empty panel space, the
+search field or a category closes it. Binds, Config and Themes replace the module
+content inside the same centred window rather than opening a separate side
+window. The panel fades and lifts in when opened, manager content slides gently
+into place, and switches/slider animate between states.
 
 While in a world, press **Right Shift** to open the panel and **Escape** or
-**Right Shift** to close it. Click a category to change the listed modules;
-click a module's switch to toggle it; click anywhere else on a chip to open its
-drop-down settings. MODE opens a four-entry list (Normal, Smooth, Instant,
-Legacy) that closes on a click outside. The VALUE slider follows the cursor
-while the mouse button is held, so it can be dragged smoothly. Clicking the key
-box starts a key capture; Escape cancels it, Backspace/Delete clears the bind.
-A bound key toggles the placeholder while playing, without consuming the game's
-own key action. Right Shift and Escape are reserved.
+**Right Shift** to close it. Click a category to change the listed modules and
+the footer arrows to page inside it; click a module's switch to toggle it; click
+anywhere else on a chip to open its drop-down settings. MODE opens a four-entry
+list (Normal, Smooth, Instant, Legacy) that closes on a click outside. The VALUE
+slider follows the cursor while the mouse button is held, so it can be dragged
+smoothly. Clicking the key box starts a key capture; Escape cancels it,
+Backspace/Delete clears the bind. A bound key toggles its module while playing,
+without consuming the game's own key action. Right Shift and Escape are reserved.
 
 The search field filters every category live by module name (case-insensitive)
-and shows RESULTS instead of a category title; click the field or press a
-character to type, Escape unfocuses or clears it, and the X clears it. MANAGER
+and shows RESULTS instead of a category title; the same stepper then pages six
+matches at a time and the header counts every match, not just the page. Click
+the field or press a character to type, Escape unfocuses or clears it, and the X
+clears it; typing, clearing or switching category returns to the first page.
+MANAGER
 holds Binds, Config and Themes in the same row style as the categories: Binds
-lists the assigned keys in grid order and jumps to the module you click, with
-CLEAR ALL BINDS; Config lists the saved presets and offers NEW, SAVE, LOAD and
-DELETE with a status line; Themes previews five accent palettes (Azure, Violet,
-Emerald, Amber, Rose) and recolours the whole panel when one is picked.
+lists the assigned keys in grid order and jumps to the module you click — which
+turns to the page that holds it — with CLEAR ALL BINDS; the page fits eight rows,
+so beyond that it lists eight and counts the rest (`+3 MORE BINDS`). Config lists
+the saved presets and offers NEW, SAVE, LOAD and DELETE with a status line;
+Themes previews five accent palettes (Azure, Violet, Emerald, Amber, Rose) and
+recolours the whole panel when one is picked.
+
+The catalog is 100 module names in the five categories a normal client lists, and
+every one of them is marked for what it does. A filled dot in a chip's corner and
+the `WORKING` legend entry mean the switch drives real game code; a hollow dot
+and `NOT WIRED` mean the module only stores state, because the pinned native-mod
+API cannot reach that behaviour. Eleven modules are wired:
+
+| Module | What its switch does |
+|---|---|
+| Attack Aura | Each tick, Horizon's own `attack_mob` on the nearest living mob inside the reach the VALUE slider sets (3→8 blocks): real damage, knockback, sweep and sound. |
+| Trigger Bot | Attacks whatever Horizon's crosshair raycast is already on, so aiming alone kills. |
+| Aim Assist | Turns the player's yaw/pitch onto the nearest living mob in melee reach; VALUE is the share of the gap closed per tick, MODE `Smooth` eases it and `Instant` snaps. |
+| Sprint | Holds Left Ctrl logically while any movement key is down, so the sim sprints every tick instead of needing the double-tap. |
+| Coordinates | XYZ in the top-left readout; MODE picks whole blocks or two decimals. |
+| Direction | Cardinal facing, plus yaw and dimension in the other MODEs. |
+| Clock | Wall clock as `HH:MM:SS UTC` — the mod API exposes no timezone, so the readout names its own basis. |
+| FPS | Frames per second, with the slowest frame and 1% low in the other MODEs. |
+| CPS | Attack and use clicks per second. |
+| Keystrokes | WASD/space/sneak/sprint caps in the bottom-left corner, lit while held, labelled from the player's own keybinds. |
+| Session Stats | Time spent inside the current world, reset when it is left. |
+
+The rest are honest gaps, not broken switches. Speed, Step, No Slow and the other
+movement cheats are overwritten every tick from the movement attribute
+(`motion.rs`), Fly is server-authoritative, Full Bright is recomputed per frame
+with nothing to set, and ESP, Chams, Tracers, X-ray and Name Tags would need a
+3-D world-render hook — `native_hud` is a 2-D batch. Their switch, MODE, VALUE
+and bind still save and sync; they just do nothing to the game.
 
 Settings persist as dependency-free text files under `config/prism/`
 (`# prism config v2`, `category=N`, `theme=N`, `enabled=c,m`, `bind=c,m,key`,
 `value=c,m,v`, `mode=c,m,index`). `session.cfg` is written when the panel
 closes and restored on open; named configs are only touched by the Config
-buttons. Module switches, values, modes and binds have no gameplay effect —
-binds only consume their own key press, and the theme only changes the panel's
-accent. The panel is drawn by `prism_ui.rs`, a public support module injected
-into `horizon_client`'s library crate: Horizon's design-system widgets are
-crate-private there, while `game.rs` is compiled into the binary crate. The
+buttons. Binds only consume their own key press, and the theme only changes the
+panel's accent. The panel is drawn by `prism_ui.rs`, a public support module
+injected into `horizon_client`'s library crate: Horizon's design-system widgets
+are crate-private there, while `game.rs` is compiled into the binary crate. The
 game-side helpers only snapshot state and hit-test the shared rectangles. The
-old `src/overlay.rs` scaffold is not part of this native bundle.
+behaviours above run in two further injected helpers, `mods_tick.rs` at the head
+of `Game::native_tick` and `mods_hud.rs` at the head of `Game::native_hud`, which
+read the same panel state the GUI writes. The old `src/overlay.rs` scaffold is
+not part of this native bundle.
 
-A minimal **horizon-mixins** mod template based on
+A **horizon-mixins** mod template grown from
 [Horizon Veinminer](https://github.com/levzzz5154/horizon-veinminer).
-It declares one HEAD hook that logs a block-break attempt, then lets Horizon's
-original method run unchanged. Runtime logic lives in one Rust file that also
-builds as a standalone testable Cargo library.
+It declares five hooks — a block-break log, the click GUI's render pass, the
+window's input event, and the module engine's tick and HUD passes. None of them
+replaces a Horizon method body: the panel and the behaviours run beside the
+original code, and only the input hook consumes an event, and only while the
+panel is open.
+Runtime logic lives in files that also build as a standalone testable Cargo
+library.
 
 This is the native source-mixin path: it builds a custom Horizon executable.
 For content mods (data only, `.hmod`), use Horizon's `cargo horizon-mod new`
@@ -108,12 +147,14 @@ Cargo.toml                         Standalone runtime library + source audit wor
 compatibility.json                 Exact upstream/tool revisions and source hashes
 mixins/example_mod/
   horizon-mixin.toml                Modules, hooks and compatibility pin
-  break.rs                         Small typed hook adapter
-  runtime.rs                       Panel state, binds and unit tests (standalone library)
-  gui_render.rs                    Snapshots state and calls the panel renderer
-  gui_input.rs                     Right Shift, keyboard, search and mouse handling
-  prism_ui.rs                      Centred layout, Geist text, 3x2 chips, inline settings
-  icons.rs                         Generated base64 logo/icon payloads and decoder
+  break.rs                          Small typed hook adapter
+  runtime.rs                        Panel state, 100-module catalog, unit tests (standalone library)
+  gui_render.rs                     Snapshots state and calls the panel renderer
+  gui_input.rs                      Right Shift, keyboard, search, paging and mouse handling
+  prism_ui.rs                       Centred layout, Geist text, paged 3x2 chips, inline settings
+  mods_tick.rs                      Sprint/Aura/Trigger/Aim engine, head of `Game::native_tick`
+  mods_hud.rs                       Readouts and keystrokes, head of `Game::native_hud`
+  icons.rs                          Generated base64 logo/icon payloads and decoder
 tools/gen_icons.mjs                Regenerates icons.rs from tools/icons/ sources
 tools/icons/                       Supplied logo and icon assets (P-logo, SVG, PNG)
 tools/horizon.py                   Export → plan → apply → check/build/test
