@@ -184,13 +184,6 @@ impl GuiState {
         self.dragging = false;
     }
 
-    /// Keeps the settings drop-down populated instead of showing a placeholder.
-    pub fn select_default(&mut self) {
-        if self.selected.is_none() {
-            self.selected = Some((self.category, 0));
-        }
-    }
-
     pub fn close_side(&mut self) {
         self.side = SIDE_NONE;
         self.waiting_bind = false;

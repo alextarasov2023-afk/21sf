@@ -10,30 +10,32 @@ embedded as base64 PNGs in `icons.rs` and generated from `tools/icons/` by
 `tools/gen_icons.mjs`; the keyboard glyph is still drawn from vector shapes.
 Every module row reuses the icon of its own category, so Combat rows show the
 sword, Movement the runner and so on, and Config uses the open-folder asset.
+The P logo is recoloured to the current theme accent rather than drawn white.
 They are decoded once and uploaded into the HUD glyph atlas, so the package
 stays source-only.
 
-The panel is centred on a 1280×640 design surface as a 950×520 window: a
-sidebar with only the supplied logo (no wordmark), the five module categories
+The panel is centred on a 1280×640 design surface as a 900×520 window: a
+sidebar with only the recoloured logo (no wordmark), the five module categories
 and three manager entries (Binds, Config, Themes) styled as one continuous
-list, plus the local player's skin face and name at the bottom. The content
-area holds the search field, a 3×2 grid of short module chips, and the selected
-module's drop-down settings directly underneath, so the panel has no dead
-space. Binds, Config and Themes replace the module content inside the same
-centred window rather than opening a separate side window. The panel fades and
-lifts in when opened, manager content slides gently into place, and
+list. The content area holds the search field and a 3×2 grid of short module
+chips. Clicking a chip opens a narrow 216×176 settings drop-down column
+anchored directly beneath that chip — its ENABLED switch, MODE select, KEY BIND
+field and VALUE slider stacked in one tidy column — rather than a wide panel
+half; clicking the chip again, empty panel space, the search field or a
+category closes it. Binds, Config and Themes replace the module content inside
+the same centred window rather than opening a separate side window. The panel
+fades and lifts in when opened, manager content slides gently into place, and
 switches/slider animate between states.
 
 While in a world, press **Right Shift** to open the panel and **Escape** or
 **Right Shift** to close it. Click a category to change the listed modules;
 click a module's switch to toggle it; click anywhere else on a chip to open its
-drop-down settings inline (ENABLED switch, MODE select, KEY BIND field, VALUE
-slider). MODE opens a four-entry list (Normal, Smooth, Instant, Legacy) that
-closes on a click outside. The VALUE slider follows the cursor while the mouse
-button is held, so it can be dragged smoothly. Clicking the key box starts a key
-capture; Escape cancels it, Backspace/Delete clears the bind. A bound key
-toggles the placeholder while playing, without consuming the game's own key
-action. Right Shift and Escape are reserved.
+drop-down settings. MODE opens a four-entry list (Normal, Smooth, Instant,
+Legacy) that closes on a click outside. The VALUE slider follows the cursor
+while the mouse button is held, so it can be dragged smoothly. Clicking the key
+box starts a key capture; Escape cancels it, Backspace/Delete clears the bind.
+A bound key toggles the placeholder while playing, without consuming the game's
+own key action. Right Shift and Escape are reserved.
 
 The search field filters every category live by module name (case-insensitive)
 and shows RESULTS instead of a category title; click the field or press a

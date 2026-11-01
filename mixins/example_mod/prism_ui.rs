@@ -6,12 +6,12 @@
 // Everything here is authored on a 1280x640 design surface. The main panel
 // always stays centred. Manager pages replace the module content inside that
 // same panel instead of opening a separate window. The module grid is 3x2
-// short chips and the selected module's drop-down settings sit inline
-// underneath. The game module snapshots
-// its state into `View` and calls `render`; input hit-tests the same public
-// `Rect`s, so drawing and clicking cannot disagree. Icons and the logo are the
-// bundled PNGs in `example_mod_icons`, uploaded once into the bottom strip of
-// the glyph atlas.
+// short chips; clicking a chip opens a narrow drop-down column directly beneath
+// it with that module's mode, key and value, and clicking anywhere else closes
+// it. The game module snapshots its state into `View` and calls `render`; input
+// hit-tests the same public `Rect`s, so drawing and clicking cannot disagree.
+// Icons and the logo are the bundled PNGs in `example_mod_icons`, uploaded once
+// into the bottom strip of the glyph atlas.
 use std::cell::RefCell;
 
 use crate::example_mod_icons;
@@ -23,25 +23,27 @@ use crate::ui_theme::{Face, Ui};
 pub const DESIGN_W: f32 = 1280.0;
 pub const DESIGN_H: f32 = 640.0;
 
-pub const PANEL_W: f32 = 950.0;
+pub const PANEL_W: f32 = 900.0;
 pub const PANEL_H: f32 = 520.0;
 pub const PANEL_Y: f32 = (DESIGN_H - PANEL_H) / 2.0;
 pub const SIDEBAR_W: f32 = 188.0;
 
 pub const CONTENT_X: f32 = 208.0;
-pub const CONTENT_W: f32 = 722.0;
+pub const CONTENT_W: f32 = 672.0;
 pub const COLUMNS: usize = 3;
 pub const ROWS: usize = 2;
-pub const COLUMN_W: f32 = 234.0;
-pub const COLUMN_STEP: f32 = 244.0;
-pub const ROW_H: f32 = 58.0;
-pub const ROW_STEP: f32 = 68.0;
-pub const ROW_TOP: f32 = 108.0;
+pub const COLUMN_W: f32 = 216.0;
+pub const COLUMN_STEP: f32 = 224.0;
+pub const ROW_H: f32 = 54.0;
+pub const ROW_STEP: f32 = 62.0;
+pub const ROW_TOP: f32 = 100.0;
 
-pub const INLINE_Y: f32 = 252.0;
-pub const INLINE_H: f32 = 248.0;
+/// The narrow drop-down column anchored under the selected chip.
+pub const DROP_W: f32 = 216.0;
+pub const DROP_H: f32 = 176.0;
 
-/// Mirrors `example_mod::SIDE_*` in the game module: modules, then manager pages.
+/// Mirrors `example_mod::SIDE_*` in the game module: 0 closed, then the
+/// manager windows.
 pub const SIDE_NONE: usize = 0;
 pub const SIDE_BINDS: usize = 1;
 pub const SIDE_CONFIG: usize = 2;
@@ -73,7 +75,7 @@ impl Rect {
     }
 }
 
-/// The main panel never moves when a sidebar page changes.
+/// The main panel never moves when a manager page changes.
 pub fn main_rect(_side: usize) -> Rect {
     Rect {
         x: (DESIGN_W - PANEL_W) / 2.0,
@@ -169,22 +171,11 @@ pub fn manager_row(side: usize, index: usize) -> Rect {
     }
 }
 
-/// The rounded plate holding the local player's face in the sidebar footer.
-pub fn profile_plate(side: usize) -> Rect {
-    let main = main_rect(side);
-    Rect {
-        x: main.x + 12.0,
-        y: main.y + 455.0,
-        w: 38.0,
-        h: 38.0,
-    }
-}
-
 pub fn side_close(side: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
-        x: frame.x + frame.w - 24.0,
-        y: frame.y + 22.0,
+        x: frame.x + frame.w - 38.0,
+        y: frame.y + 16.0,
         w: 24.0,
         h: 24.0,
     }
@@ -193,9 +184,9 @@ pub fn side_close(side: usize) -> Rect {
 pub fn binds_row(side: usize, index: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
-        x: frame.x,
-        y: frame.y + 96.0 + index as f32 * 44.0,
-        w: frame.w,
+        x: frame.x + 20.0,
+        y: frame.y + 92.0 + index as f32 * 44.0,
+        w: frame.w - 40.0,
         h: 38.0,
     }
 }
@@ -203,32 +194,32 @@ pub fn binds_row(side: usize, index: usize) -> Rect {
 pub fn binds_clear(side: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
-        x: frame.x,
-        y: frame.y + 456.0,
-        w: frame.w,
-        h: 36.0,
+        x: frame.x + 20.0,
+        y: frame.y + frame.h - 60.0,
+        w: frame.w - 40.0,
+        h: 44.0,
     }
 }
 
 pub fn config_row(side: usize, index: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
-        x: frame.x,
-        y: frame.y + 96.0 + index as f32 * 46.0,
-        w: frame.w,
-        h: 40.0,
+        x: frame.x + 20.0,
+        y: frame.y + 92.0 + index as f32 * 38.0,
+        w: frame.w - 40.0,
+        h: 34.0,
     }
 }
 
-/// `which`: 0 new, 1 save, 2 load, 3 delete; one compact row of buttons.
+/// `which`: 0 new, 1 save, 2 load, 3 delete; a 2x2 block of buttons.
 pub fn config_button(side: usize, which: usize) -> Rect {
     let frame = side_rect(side);
-    let gap = 10.0;
-    let width = (frame.w - gap * 3.0) / 4.0;
+    let column = (which % 2) as f32;
+    let row = (which / 2) as f32;
     Rect {
-        x: frame.x + which as f32 * (width + gap),
-        y: frame.y + 452.0,
-        w: width,
+        x: frame.x + 20.0 + column * 124.0,
+        y: frame.y + 404.0 + row * 46.0,
+        w: 112.0,
         h: 40.0,
     }
 }
@@ -236,9 +227,9 @@ pub fn config_button(side: usize, which: usize) -> Rect {
 pub fn theme_row(side: usize, index: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
-        x: frame.x,
-        y: frame.y + 96.0 + index as f32 * 56.0,
-        w: frame.w,
+        x: frame.x + 20.0,
+        y: frame.y + 92.0 + index as f32 * 56.0,
+        w: frame.w - 40.0,
         h: 48.0,
     }
 }
@@ -247,81 +238,81 @@ pub fn theme_row(side: usize, index: usize) -> Rect {
 pub fn theme_preview(side: usize) -> Rect {
     let frame = side_rect(side);
     Rect {
-        x: frame.x,
+        x: frame.x + 20.0,
         y: frame.y + 388.0,
-        w: frame.w,
-        h: 104.0,
+        w: frame.w - 40.0,
+        h: 108.0,
     }
 }
 
-/// The inline settings drop-down under the module grid.
-pub fn inline_panel(side: usize) -> Rect {
-    let main = main_rect(side);
+/// The drop-down column anchored directly under the selected chip.
+pub fn dropdown_rect(side: usize, column: usize, row: usize) -> Rect {
+    let chip = module_row(side, column, row);
     Rect {
-        x: main.x + CONTENT_X,
-        y: main.y + INLINE_Y,
-        w: CONTENT_W,
-        h: INLINE_H,
+        x: chip.x,
+        y: chip.y + chip.h + 4.0,
+        w: DROP_W,
+        h: DROP_H,
     }
 }
 
-pub fn inline_toggle(side: usize) -> Rect {
-    let panel = inline_panel(side);
+pub fn dropdown_toggle(side: usize, column: usize, row: usize) -> Rect {
+    let drop = dropdown_rect(side, column, row);
     Rect {
-        x: panel.x + panel.w - 20.0 - 44.0,
-        y: panel.y + 16.0,
-        w: 44.0,
-        h: 24.0,
+        x: drop.x + drop.w - 14.0 - 40.0,
+        y: drop.y + 8.0,
+        w: 40.0,
+        h: 22.0,
     }
 }
 
-pub fn inline_mode(side: usize) -> Rect {
-    let panel = inline_panel(side);
+pub fn dropdown_mode(side: usize, column: usize, row: usize) -> Rect {
+    let drop = dropdown_rect(side, column, row);
     Rect {
-        x: panel.x + 104.0,
-        y: panel.y + 68.0,
-        w: panel.w - 124.0,
-        h: 40.0,
+        x: drop.x + 12.0,
+        y: drop.y + 40.0,
+        w: drop.w - 24.0,
+        h: 32.0,
     }
 }
 
-pub fn inline_mode_option(side: usize, option: usize) -> Rect {
-    let field = inline_mode(side);
+pub fn dropdown_mode_option(side: usize, column: usize, row: usize, option: usize) -> Rect {
+    let mode = dropdown_mode(side, column, row);
     Rect {
-        x: field.x,
-        y: field.y + field.h + 6.0 + option as f32 * 30.0,
-        w: field.w,
-        h: 26.0,
+        x: mode.x,
+        y: mode.y + mode.h + 2.0 + option as f32 * 26.0,
+        w: mode.w,
+        h: 22.0,
     }
 }
 
-pub fn inline_bind(side: usize) -> Rect {
-    let panel = inline_panel(side);
+pub fn dropdown_bind(side: usize, column: usize, row: usize) -> Rect {
+    let drop = dropdown_rect(side, column, row);
     Rect {
-        x: panel.x + 104.0,
-        y: panel.y + 124.0,
-        w: panel.w - 124.0,
-        h: 40.0,
+        x: drop.x + 12.0,
+        y: drop.y + 80.0,
+        w: drop.w - 24.0,
+        h: 32.0,
     }
 }
 
-pub fn inline_slider_track(side: usize) -> Rect {
-    let panel = inline_panel(side);
+pub fn dropdown_slider_track(side: usize, column: usize, row: usize) -> Rect {
+    let drop = dropdown_rect(side, column, row);
     Rect {
-        x: panel.x + 104.0,
-        y: panel.y + 196.0,
-        w: panel.w - 104.0 - 76.0,
-        h: 8.0,
+        x: drop.x + 12.0,
+        y: drop.y + 130.0,
+        w: drop.w - 24.0 - 44.0,
+        h: 6.0,
     }
 }
 
-pub fn inline_slider_hit(side: usize) -> Rect {
-    let track = inline_slider_track(side);
+pub fn dropdown_slider_hit(side: usize, column: usize, row: usize) -> Rect {
+    let track = dropdown_slider_track(side, column, row);
     Rect {
-        x: track.x - 10.0,
-        y: track.y - 14.0,
-        w: track.w + 20.0,
-        h: track.h + 28.0,
+        x: track.x - 6.0,
+        y: track.y - 12.0,
+        w: track.w + 12.0 + 44.0,
+        h: track.h + 24.0,
     }
 }
 
@@ -391,11 +382,6 @@ pub struct View<'a> {
     pub configs: &'a [String],
     pub config_selected: Option<usize>,
     pub status: &'a str,
-    /// The local player's name for the sidebar profile row.
-    pub player_name: &'a str,
-    /// An atlas sprite holding the local player's 64x64 skin (e.g.
-    /// `entity/player/wide/steve`), or `""` when the atlas has none.
-    pub player_skin: &'a str,
     /// Panel open fade/slide, 0..1; stepped by [`render`].
     pub open: &'a mut f32,
     /// Manager-page slide-in, 0..1; stepped by [`render`].
@@ -421,8 +407,14 @@ pub fn render(atlas: &HudAtlas, batch: &mut HudBatch, cursor: (f32, f32), view: 
     }
     if view.dragging
         && let Some((category, module)) = view.selected
+        && let Some(slot) = view
+            .visible
+            .iter()
+            .position(|&(c, m)| c == category && m == module)
     {
-        let track = inline_slider_track(view.side);
+        let column = slot % COLUMNS;
+        let row = slot / COLUMNS;
+        let track = dropdown_slider_track(view.side, column, row);
         let value = ((cursor.0 - track.x) / track.w * 100.0)
             .round()
             .clamp(0.0, 100.0);
@@ -692,32 +684,6 @@ impl Paint<'_, '_> {
         }
     }
 
-    /// Draws the front of a 64x64 player skin (face plus hat layer) from the
-    /// sprite the game keeps for it. Returns false when the atlas has none.
-    fn face(&mut self, sprite: &str, cx: f32, cy: f32, size: f32) -> bool {
-        let Some(region) = self.ui.atlas.sprites.get(sprite).copied() else {
-            return false;
-        };
-        let (ox, oy, s) = (self.ox, self.oy, self.s);
-        let k = self.ui.density / self.ui.batch.scale;
-        let (x, y) = (ox + (cx - size / 2.0) * s, oy + (cy - size / 2.0) * s);
-        let (du, dv) = (region.u1 - region.u0, region.v1 - region.v0);
-        for u in [8.0, 40.0] {
-            let uv = crate::hud::Rect {
-                u0: region.u0 + du * u / 64.0,
-                v0: region.v0 + dv * 8.0 / 64.0,
-                u1: region.u0 + du * (u + 8.0) / 64.0,
-                v1: region.v0 + dv * 16.0 / 64.0,
-                w: 8,
-                h: 8,
-            };
-            self.ui
-                .batch
-                .rect_uv(x * k, y * k, size * s * k, size * s * k, uv, u32::MAX);
-        }
-        true
-    }
-
     fn raw_quad(&mut self, corners: [[f32; 2]; 4], color: u32) {
         let k = self.ui.density / self.ui.batch.scale;
         let quad = corners.map(|[x, y]| [x * k, y * k]);
@@ -836,10 +802,10 @@ impl Paint<'_, '_> {
 
     fn draw_sidebar(&mut self, view: &View<'_>, main: Rect) {
         let theme = self.theme;
-        self.icon("logo", main.x + 30.0, main.y + 36.0, 28.0, u32::MAX);
+        self.icon("logo", main.x + 30.0, main.y + 36.0, 28.0, theme.accent);
         for (index, name) in view.categories.iter().enumerate() {
             let row = category_row(view.side, index);
-            let active = view.side == SIDE_NONE && view.category == index && view.query.is_empty();
+            let active = view.category == index && view.query.is_empty();
             self.sidebar_entry(row, active, false);
             let cy = row.y + row.h / 2.0;
             self.icon(
@@ -864,7 +830,7 @@ impl Paint<'_, '_> {
         }
         self.fill(
             main.x + 14.0,
-            main.y + 268.0,
+            main.y + 253.0,
             SIDEBAR_W - 28.0,
             1.0,
             theme.divider,
@@ -879,10 +845,7 @@ impl Paint<'_, '_> {
             match index {
                 0 => self.keyboard(row.x + 19.0, cy, 1.0, color),
                 1 => self.icon("folder", row.x + 19.0, cy, 16.0, color),
-                _ => {
-                    self.disc(row.x + 19.0, cy, 7.0, theme.accent_deep);
-                    self.disc(row.x + 19.0, cy, 4.5, theme.accent);
-                }
+                _ => self.icon("cog", row.x + 19.0, cy, 16.0, color),
             }
             self.text_mid(
                 if active { Face::Medium } else { Face::Regular },
@@ -897,29 +860,6 @@ impl Paint<'_, '_> {
                 name,
             );
         }
-        self.fill(
-            main.x + 14.0,
-            main.y + 438.0,
-            SIDEBAR_W - 28.0,
-            1.0,
-            theme.divider,
-        );
-        // The face fills a genuinely square plate, matching Minecraft heads.
-        let plate = profile_plate(view.side);
-        let (fx, fy) = plate.center();
-        self.fill(plate.x, plate.y, plate.w, plate.h, theme.raised);
-        if !self.face(view.player_skin, fx, fy, plate.w) {
-            self.icon("person", fx, fy, 22.0, theme.muted);
-        }
-        self.border(plate.x, plate.y, plate.w, plate.h, 0.0, theme.border);
-        self.text_mid(
-            Face::Medium,
-            13.5,
-            plate.x + plate.w + 10.0,
-            fy,
-            theme.strong,
-            view.player_name,
-        );
     }
 
     fn sidebar_entry(&mut self, row: Rect, active: bool, hovered: bool) {
@@ -1031,8 +971,18 @@ impl Paint<'_, '_> {
                 let row = slot / COLUMNS;
                 self.draw_module_chip(view, side, column, row, *category, *module);
             }
+            if let Some((category, module)) = view.selected {
+                if let Some(slot) = view
+                    .visible
+                    .iter()
+                    .position(|&(c, m)| c == category && m == module)
+                {
+                    let column = slot % COLUMNS;
+                    let row = slot / COLUMNS;
+                    self.draw_dropdown(view, side, column, row, category, module);
+                }
+            }
         }
-        self.draw_inline(view, side);
     }
 
     fn draw_module_chip(
@@ -1097,64 +1047,33 @@ impl Paint<'_, '_> {
         );
     }
 
-    fn draw_inline(&mut self, view: &View<'_>, side: usize) {
+    fn draw_dropdown(
+        &mut self,
+        view: &View<'_>,
+        side: usize,
+        column: usize,
+        row: usize,
+        category: usize,
+        module: usize,
+    ) {
         let theme = self.theme;
-        let panel = inline_panel(side);
-        self.rounded(panel.x, panel.y, panel.w, panel.h, 14.0, theme.field);
-        self.border(panel.x, panel.y, panel.w, panel.h, 14.0, theme.border);
-        let Some((category, module)) = view.selected else {
-            self.text_centered(
-                Face::Medium,
-                9.0,
-                panel.x + panel.w / 2.0,
-                panel.y + panel.h / 2.0 - 6.0,
-                theme.muted,
-                "SELECT A MODULE TO CONFIGURE",
-            );
-            return;
-        };
-        let cy = panel.y + 28.0;
-        self.icon(
-            category_icon(category),
-            panel.x + 26.0,
-            cy,
-            22.0,
-            theme.accent,
-        );
-        self.text_mid(
-            Face::Medium,
-            15.0,
-            panel.x + 48.0,
-            cy,
-            theme.strong,
-            view.modules[category][module],
-        );
-        self.toggle(inline_toggle(side), view.animation[category][module]);
-        self.fill(
-            panel.x + 20.0,
-            panel.y + 56.0,
-            panel.w - 40.0,
-            1.0,
-            theme.divider,
+        let drop = dropdown_rect(side, column, row);
+        self.rounded(drop.x, drop.y, drop.w, drop.h, 12.0, theme.window);
+        self.border(drop.x, drop.y, drop.w, drop.h, 12.0, theme.border);
+
+        self.toggle(
+            dropdown_toggle(side, column, row),
+            view.animation[category][module],
         );
 
-        self.text_spaced(
-            Face::Medium,
-            8.0,
-            panel.x + 20.0,
-            panel.y + 68.0 + 16.5,
-            1.6,
-            theme.faint,
-            "MODE",
-        );
-        let mode = inline_mode(side);
-        self.rounded(mode.x, mode.y, mode.w, mode.h, 10.0, theme.raised);
+        let mode = dropdown_mode(side, column, row);
+        self.rounded(mode.x, mode.y, mode.w, mode.h, 9.0, theme.raised);
         self.border(
             mode.x,
             mode.y,
             mode.w,
             mode.h,
-            10.0,
+            9.0,
             if view.mode_open {
                 theme.accent
             } else if self.has(mode) {
@@ -1165,32 +1084,23 @@ impl Paint<'_, '_> {
         );
         self.text_mid(
             Face::Regular,
-            13.0,
-            mode.x + 16.0,
+            12.0,
+            mode.x + 12.0,
             mode.y + mode.h / 2.0,
             theme.ink,
             view.mode_names
                 [usize::from(view.modes[category][module]).min(view.mode_names.len() - 1)],
         );
-        self.chevron(mode.x + mode.w - 20.0, mode.y + mode.h / 2.0, theme.muted);
+        self.chevron(mode.x + mode.w - 16.0, mode.y + mode.h / 2.0, theme.muted);
 
-        self.text_spaced(
-            Face::Medium,
-            8.0,
-            panel.x + 20.0,
-            panel.y + 124.0 + 16.5,
-            1.6,
-            theme.faint,
-            "KEY BIND",
-        );
-        let bind = inline_bind(side);
-        self.rounded(bind.x, bind.y, bind.w, bind.h, 10.0, theme.raised);
+        let bind = dropdown_bind(side, column, row);
+        self.rounded(bind.x, bind.y, bind.w, bind.h, 9.0, theme.raised);
         self.border(
             bind.x,
             bind.y,
             bind.w,
             bind.h,
-            10.0,
+            9.0,
             if view.waiting_bind {
                 theme.accent
             } else if self.has(bind) {
@@ -1200,21 +1110,12 @@ impl Paint<'_, '_> {
             },
         );
         let bcy = bind.y + bind.h / 2.0;
-        self.keyboard(
-            bind.x + 22.0,
-            bcy,
-            1.05,
-            if view.waiting_bind {
-                theme.accent
-            } else {
-                theme.muted
-            },
-        );
+        self.icon("keyboard", bind.x + 18.0, bcy, 14.0, theme.muted);
         if view.waiting_bind {
             self.text_mid(
                 Face::Medium,
-                12.5,
-                bind.x + 42.0,
+                11.0,
+                bind.x + 34.0,
                 bcy,
                 theme.accent,
                 "PRESS A KEY",
@@ -1224,8 +1125,8 @@ impl Paint<'_, '_> {
             let label = key.map(key_label).unwrap_or_else(|| "UNBOUND".to_string());
             self.text_mid(
                 Face::Medium,
-                12.5,
-                bind.x + 42.0,
+                11.0,
+                bind.x + 34.0,
                 bcy,
                 if key.is_some() {
                     theme.strong
@@ -1236,26 +1137,17 @@ impl Paint<'_, '_> {
             );
         }
 
-        let vcy = panel.y + 200.0;
-        self.text_spaced(
-            Face::Medium,
-            8.0,
-            panel.x + 20.0,
-            vcy - 8.5 * 0.725 + 0.5,
-            1.6,
-            theme.faint,
-            "VALUE",
-        );
+        let vcy = drop.y + 133.0;
         let percent = format!("{}%", view.values[category][module]);
         self.text_mid_right(
             Face::Medium,
-            11.0,
-            panel.x + panel.w - 20.0,
+            10.0,
+            drop.x + drop.w - 12.0,
             vcy,
             theme.accent,
             &percent,
         );
-        let track = inline_slider_track(side);
+        let track = dropdown_slider_track(side, column, row);
         self.rounded(
             track.x,
             track.y,
@@ -1275,46 +1167,46 @@ impl Paint<'_, '_> {
                 theme.accent,
             );
         }
-        self.disc(track.x + filled, track.y + track.h / 2.0, 7.0, theme.strong);
+        self.disc(track.x + filled, track.y + track.h / 2.0, 5.0, theme.strong);
 
         if view.mode_open {
-            let first = inline_mode_option(side, 0);
+            let first = dropdown_mode_option(side, column, row, 0);
             let count = view.mode_names.len() as f32;
             let list = Rect {
                 x: first.x,
                 y: first.y,
                 w: first.w,
-                h: count * 30.0 - 4.0,
+                h: count * 26.0 - 4.0,
             };
             self.rounded(
                 list.x - 2.0,
                 list.y - 2.0,
                 list.w + 4.0,
                 list.h + 4.0,
-                12.0,
+                11.0,
                 theme.border,
             );
-            self.rounded(list.x, list.y, list.w, list.h, 10.0, theme.window);
+            self.rounded(list.x, list.y, list.w, list.h, 9.0, theme.window);
             for (option, name) in view.mode_names.iter().enumerate() {
-                let row = inline_mode_option(side, option);
+                let opt = dropdown_mode_option(side, column, row, option);
                 let active = usize::from(view.modes[category][module]) == option;
                 if active {
                     self.rounded(
-                        row.x + 4.0,
-                        row.y,
-                        row.w - 8.0,
-                        row.h,
-                        8.0,
+                        opt.x + 3.0,
+                        opt.y,
+                        opt.w - 6.0,
+                        opt.h,
+                        7.0,
                         theme.selected_bg,
                     );
-                } else if self.has(row) {
-                    self.rounded(row.x + 4.0, row.y, row.w - 8.0, row.h, 8.0, theme.hover);
+                } else if self.has(opt) {
+                    self.rounded(opt.x + 3.0, opt.y, opt.w - 6.0, opt.h, 7.0, theme.hover);
                 }
                 self.text_mid(
                     if active { Face::Medium } else { Face::Regular },
-                    12.5,
-                    row.x + 16.0,
-                    row.y + row.h / 2.0,
+                    11.0,
+                    opt.x + 12.0,
+                    opt.y + opt.h / 2.0,
                     if active {
                         theme.accent_light
                     } else {
@@ -1323,7 +1215,7 @@ impl Paint<'_, '_> {
                     name,
                 );
                 if active {
-                    self.disc(row.x + row.w - 16.0, row.y + row.h / 2.0, 2.4, theme.accent);
+                    self.disc(opt.x + opt.w - 12.0, opt.y + opt.h / 2.0, 2.0, theme.accent);
                 }
             }
         }
@@ -1333,6 +1225,8 @@ impl Paint<'_, '_> {
         let theme = self.theme;
         let side = view.side;
         let frame = side_rect(side);
+        self.rounded(frame.x, frame.y, frame.w, frame.h, 16.0, theme.window);
+        self.border(frame.x, frame.y, frame.w, frame.h, 16.0, theme.border);
 
         let close = side_close(side);
         let (x, y) = close.center();
@@ -1368,7 +1262,7 @@ impl Paint<'_, '_> {
         self.text_spaced(
             Face::Medium,
             8.0,
-            frame.x,
+            frame.x + 20.0,
             frame.y + 20.0,
             1.8,
             theme.faint,
@@ -1377,7 +1271,7 @@ impl Paint<'_, '_> {
         self.text(
             Face::Medium,
             18.0,
-            frame.x,
+            frame.x + 20.0,
             frame.y + 34.0,
             theme.strong,
             &title,
@@ -1386,7 +1280,7 @@ impl Paint<'_, '_> {
             self.text_spaced(
                 Face::Regular,
                 7.5,
-                frame.x,
+                frame.x + 20.0,
                 frame.y + 62.0,
                 1.0,
                 if side == SIDE_CONFIG && !view.status.is_empty() {
@@ -1397,7 +1291,13 @@ impl Paint<'_, '_> {
                 &detail,
             );
         }
-        self.fill(frame.x, frame.y + 82.0, frame.w, 1.0, theme.divider);
+        self.fill(
+            frame.x + 20.0,
+            frame.y + 82.0,
+            frame.w - 40.0,
+            1.0,
+            theme.divider,
+        );
 
         match side {
             SIDE_BINDS => self.draw_binds(view, frame),
@@ -1815,16 +1715,12 @@ mod tests {
     }
 
     #[test]
-    fn panel_stays_centred_on_every_page() {
-        let expected = main_rect(SIDE_NONE);
-        assert!(close(expected.x + expected.w / 2.0, DESIGN_W / 2.0));
-        assert!(close(expected.y + expected.h / 2.0, DESIGN_H / 2.0));
+    fn panel_is_centred() {
+        let rect = main_rect(SIDE_NONE);
+        assert!(close(rect.x + rect.w / 2.0, DESIGN_W / 2.0));
+        assert!(close(rect.y + rect.h / 2.0, DESIGN_H / 2.0));
         for page in [SIDE_BINDS, SIDE_CONFIG, SIDE_THEMES] {
-            assert_eq!(main_rect(page), expected);
-            let content = side_rect(page);
-            assert!(content.x >= expected.x + SIDEBAR_W);
-            assert!(content.x + content.w <= expected.x + expected.w);
-            assert!(content.y + content.h <= expected.y + expected.h);
+            assert_eq!(main_rect(page), rect);
         }
     }
 
@@ -1854,7 +1750,9 @@ mod tests {
         assert!(close(sixth.x + sixth.w, grid.x + grid.w));
         assert!(sixth.y + sixth.h <= grid.y + grid.h);
         assert!(module_row(SIDE_NONE, 0, 0).y > search_rect(SIDE_NONE).y);
-        assert!(grid.y + grid.h < inline_panel(SIDE_NONE).y);
+        let drop = dropdown_rect(SIDE_NONE, 0, 0);
+        assert!(close(drop.x, first.x));
+        assert!(drop.y > first.y + first.h);
     }
 
     #[test]
@@ -1870,29 +1768,29 @@ mod tests {
 
     #[test]
     fn slider_hit_covers_the_track() {
-        let hit = inline_slider_hit(SIDE_NONE);
-        let track = inline_slider_track(SIDE_NONE);
+        let hit = dropdown_slider_hit(SIDE_NONE, 0, 0);
+        let track = dropdown_slider_track(SIDE_NONE, 0, 0);
         assert!(hit.contains(track.x + track.w / 2.0, track.y + track.h / 2.0));
         assert!(hit.x <= track.x && hit.x + hit.w >= track.x + track.w);
     }
 
     #[test]
-    fn inline_controls_stay_inside_the_panel() {
-        let panel = inline_panel(SIDE_NONE);
+    fn dropdown_controls_stay_inside_the_panel() {
+        let drop = dropdown_rect(SIDE_NONE, 0, 0);
         for rect in [
-            inline_toggle(SIDE_NONE),
-            inline_mode(SIDE_NONE),
-            inline_mode_option(SIDE_NONE, 3),
-            inline_bind(SIDE_NONE),
-            inline_slider_hit(SIDE_NONE),
+            dropdown_toggle(SIDE_NONE, 0, 0),
+            dropdown_mode(SIDE_NONE, 0, 0),
+            dropdown_mode_option(SIDE_NONE, 0, 0, 3),
+            dropdown_bind(SIDE_NONE, 0, 0),
+            dropdown_slider_hit(SIDE_NONE, 0, 0),
         ] {
-            assert!(rect.x >= panel.x && rect.y >= panel.y, "{rect:?}");
+            assert!(rect.x >= drop.x && rect.y >= drop.y, "{rect:?}");
             assert!(
-                rect.x + rect.w <= panel.x + panel.w && rect.y + rect.h <= panel.y + panel.h,
+                rect.x + rect.w <= drop.x + drop.w && rect.y + rect.h <= drop.y + drop.h,
                 "{rect:?}"
             );
         }
-        assert!(inline_panel(SIDE_NONE).y + inline_panel(SIDE_NONE).h <= PANEL_Y + PANEL_H);
+        assert!(drop.y + drop.h <= PANEL_Y + PANEL_H);
     }
 
     #[test]
@@ -1902,7 +1800,6 @@ mod tests {
             side_close(SIDE_BINDS),
             binds_row(SIDE_BINDS, 7),
             binds_clear(SIDE_BINDS),
-            config_row(SIDE_CONFIG, 6),
             config_button(SIDE_CONFIG, 3),
             theme_row(SIDE_THEMES, 4),
             theme_preview(SIDE_THEMES),
@@ -1916,16 +1813,12 @@ mod tests {
     }
 
     #[test]
-    fn sidebar_entries_fit_above_the_profile() {
+    fn sidebar_entries_fill_the_panel() {
         let main = main_rect(SIDE_NONE);
         let last_manager = manager_row(SIDE_NONE, 2);
-        let plate = profile_plate(SIDE_NONE);
         assert!(close(last_manager.x, category_row(SIDE_NONE, 0).x));
         assert!(close(last_manager.h, category_row(SIDE_NONE, 0).h));
-        assert!(last_manager.y + last_manager.h < plate.y);
-        assert!(plate.y + plate.h <= main.y + main.h);
-        assert!(main.y + 268.0 > category_row(SIDE_NONE, 4).y + category_row(SIDE_NONE, 4).h);
-        assert!(main.y + 438.0 > last_manager.y + last_manager.h);
+        assert!(last_manager.y + last_manager.h < main.y + main.h);
     }
 
     #[test]

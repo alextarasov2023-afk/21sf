@@ -69,6 +69,9 @@ fn gui_input(
                         }
                     }
                 }
+                state.selected = None;
+                state.mode_open = false;
+                state.dragging = false;
                 return core::ops::ControlFlow::Break(());
             }
             if key.physical_key == PhysicalKey::Code(KeyCode::Escape) {
@@ -111,7 +114,6 @@ fn gui_input(
             let open = panel::toggle();
             if open {
                 state.ensure_loaded();
-                state.select_default();
             }
             drop(state);
             game.capture(!open);
@@ -197,31 +199,53 @@ fn gui_input(
             if !handled && side == panel::SIDE_NONE {
                 if state.mode_open {
                     if let Some((category, module)) = state.selected {
-                        for option in 0..panel::MODES.len() {
-                            if prism_ui::inline_mode_option(side, option).contains(cx, cy) {
-                                state.modes[category][module] = option as u8;
-                                break;
+                        if let Some(slot) = state
+                            .visible()
+                            .iter()
+                            .position(|&(c, m)| c == category && m == module)
+                        {
+                            let column = slot % prism_ui::COLUMNS;
+                            let row = slot / prism_ui::COLUMNS;
+                            for option in 0..panel::MODES.len() {
+                                if prism_ui::dropdown_mode_option(side, column, row, option)
+                                    .contains(cx, cy)
+                                {
+                                    state.modes[category][module] = option as u8;
+                                    break;
+                                }
                             }
                         }
                     }
                     state.mode_open = false;
                     handled = true;
                 } else if let Some((category, module)) = state.selected {
-                    if prism_ui::inline_toggle(side).contains(cx, cy) {
-                        state.enabled[category][module] = !state.enabled[category][module];
-                        handled = true;
-                    } else if prism_ui::inline_mode(side).contains(cx, cy) {
-                        state.mode_open = true;
-                        handled = true;
-                    } else if prism_ui::inline_bind(side).contains(cx, cy) {
-                        state.waiting_bind = true;
-                        handled = true;
-                    } else if prism_ui::inline_slider_hit(side).contains(cx, cy) {
-                        let track = prism_ui::inline_slider_track(side);
-                        let value = ((cx - track.x) / track.w * 100.0).round().clamp(0.0, 100.0);
-                        state.values[category][module] = value as u8;
-                        state.dragging = true;
-                        handled = true;
+                    if let Some(slot) = state
+                        .visible()
+                        .iter()
+                        .position(|&(c, m)| c == category && m == module)
+                    {
+                        let column = slot % prism_ui::COLUMNS;
+                        let row = slot / prism_ui::COLUMNS;
+                        if prism_ui::dropdown_toggle(side, column, row).contains(cx, cy) {
+                            state.enabled[category][module] = !state.enabled[category][module];
+                            handled = true;
+                        } else if prism_ui::dropdown_mode(side, column, row).contains(cx, cy) {
+                            state.mode_open = true;
+                            handled = true;
+                        } else if prism_ui::dropdown_bind(side, column, row).contains(cx, cy) {
+                            state.waiting_bind = true;
+                            handled = true;
+                        } else if prism_ui::dropdown_slider_hit(side, column, row).contains(cx, cy)
+                        {
+                            let track = prism_ui::dropdown_slider_track(side, column, row);
+                            let value =
+                                ((cx - track.x) / track.w * 100.0).round().clamp(0.0, 100.0);
+                            state.values[category][module] = value as u8;
+                            state.dragging = true;
+                            handled = true;
+                        } else if prism_ui::dropdown_rect(side, column, row).contains(cx, cy) {
+                            handled = true;
+                        }
                     }
                 }
             }
@@ -230,9 +254,13 @@ fn gui_input(
                 if prism_ui::search_clear(side).contains(cx, cy) {
                     state.query.clear();
                     state.search_focus = true;
+                    state.selected = None;
+                    state.mode_open = false;
                     handled = true;
                 } else if search.contains(cx, cy) {
                     state.search_focus = true;
+                    state.selected = None;
+                    state.mode_open = false;
                     handled = true;
                 }
             }
@@ -242,7 +270,7 @@ fn gui_input(
                     if prism_ui::category_row(side, index).contains(cx, cy) {
                         state.category = index;
                         state.query.clear();
-                        state.selected = Some((index, 0));
+                        state.selected = None;
                         state.close_side();
                         handled = true;
                         break;
@@ -260,6 +288,7 @@ fn gui_input(
                                 state.side_anim = 0.0;
                             }
                             state.side = target;
+                            state.selected = None;
                             state.waiting_bind = false;
                             state.mode_open = false;
                             state.dragging = false;
@@ -285,11 +314,20 @@ fn gui_input(
                     }
                     if prism_ui::toggle_row(side, column, row).contains(cx, cy) {
                         state.enabled[*category][*module] = !state.enabled[*category][*module];
+                    } else if state.selected == Some((*category, *module)) {
+                        state.selected = None;
+                        state.mode_open = false;
                     } else {
                         state.open_module(*category, *module);
                     }
+                    handled = true;
                     break;
                 }
+            }
+            if !handled && side == panel::SIDE_NONE {
+                // Clicking empty panel space dismisses the settings drop-down.
+                state.selected = None;
+                state.mode_open = false;
             }
         }
         if matches!(
